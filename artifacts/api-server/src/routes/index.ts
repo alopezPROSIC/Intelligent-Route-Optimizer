@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import authRouter from "./auth";
 import quotesRouter from "./quotes";
+import equipmentPublicRouter from "./equipment_public";
 import clientsRouter from "./clients";
 import vehiclesRouter from "./vehicles";
 import equipmentRouter from "./equipment";
@@ -18,12 +19,10 @@ const router: IRouter = Router();
 // ─── PUBLIC routes (no auth required) ────────────────────────────────────────
 router.use(healthRouter);
 router.use(authRouter);
-router.use(quotesRouter);   // cotizador endpoints are public
-// The first two service endpoints (today + pending-collection) are partially public,
-// but handled internally in servicesRouter with selective requireAuth
+router.use(quotesRouter);           // cotizador endpoints are public
+router.use(equipmentPublicRouter);  // public catalog listing for storefront
 
-// ─── PROTECTED routes (auth required) ────────────────────────────────────────
-// Apply requireAuth once here instead of repeating it in every sub-router
+// ─── PROTECTED routes (auth required for all routes below) ───────────────────
 router.use(requireAuth as any);
 router.use(clientsRouter);
 router.use(vehiclesRouter);

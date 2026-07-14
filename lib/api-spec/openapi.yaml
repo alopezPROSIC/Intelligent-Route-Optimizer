@@ -1,22 +1,35 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: PROSIC – Plataforma de Logística Inteligente
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Autenticación y sesión
+  - name: catalogs
+    description: Catálogos maestros
+  - name: services
+    description: Servicios de logística
+  - name: quotes
+    description: Cotizaciones de renta
+  - name: routes
+    description: Optimización de rutas con IA
+  - name: reports
+    description: Reportes y KPIs
+  - name: sheets
+    description: Sincronización Google Sheets
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +37,876 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── AUTH ────────────────────────────────────────────────────────────────
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Sesión iniciada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+        "401":
+          description: Credenciales inválidas
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Cerrar sesión
+      responses:
+        "200":
+          description: Sesión cerrada
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Obtener usuario actual
+      responses:
+        "200":
+          description: Usuario autenticado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: No autenticado
+
+  # ─── CLIENTES ────────────────────────────────────────────────────────────
+  /clients:
+    get:
+      operationId: listClients
+      tags: [catalogs]
+      summary: Listar clientes
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: sector
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista de clientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Client"
+    post:
+      operationId: createClient
+      tags: [catalogs]
+      summary: Crear cliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientInput"
+      responses:
+        "201":
+          description: Cliente creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+
+  /clients/{id}:
+    get:
+      operationId: getClient
+      tags: [catalogs]
+      summary: Obtener cliente
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cliente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+    put:
+      operationId: updateClient
+      tags: [catalogs]
+      summary: Actualizar cliente
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClientUpdate"
+      responses:
+        "200":
+          description: Cliente actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Client"
+    delete:
+      operationId: deleteClient
+      tags: [catalogs]
+      summary: Eliminar cliente
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Cliente eliminado
+
+  # ─── VEHÍCULOS ───────────────────────────────────────────────────────────
+  /vehicles:
+    get:
+      operationId: listVehicles
+      tags: [catalogs]
+      summary: Listar vehículos
+      responses:
+        "200":
+          description: Lista de vehículos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vehicle"
+    post:
+      operationId: createVehicle
+      tags: [catalogs]
+      summary: Crear vehículo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleInput"
+      responses:
+        "201":
+          description: Vehículo creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+
+  /vehicles/{id}:
+    put:
+      operationId: updateVehicle
+      tags: [catalogs]
+      summary: Actualizar vehículo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VehicleUpdate"
+      responses:
+        "200":
+          description: Vehículo actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+    delete:
+      operationId: deleteVehicle
+      tags: [catalogs]
+      summary: Eliminar vehículo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Eliminado
+
+  # ─── EQUIPOS ─────────────────────────────────────────────────────────────
+  /equipment:
+    get:
+      operationId: listEquipment
+      tags: [catalogs]
+      summary: Listar equipos
+      parameters:
+        - in: query
+          name: tipo
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lista de equipos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Equipment"
+    post:
+      operationId: createEquipment
+      tags: [catalogs]
+      summary: Crear equipo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquipmentInput"
+      responses:
+        "201":
+          description: Equipo creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipment"
+
+  /equipment/{id}:
+    put:
+      operationId: updateEquipment
+      tags: [catalogs]
+      summary: Actualizar equipo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EquipmentUpdate"
+      responses:
+        "200":
+          description: Equipo actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipment"
+    delete:
+      operationId: deleteEquipment
+      tags: [catalogs]
+      summary: Eliminar equipo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Eliminado
+
+  # ─── CONDUCTORES ─────────────────────────────────────────────────────────
+  /drivers:
+    get:
+      operationId: listDrivers
+      tags: [catalogs]
+      summary: Listar conductores / proveedores
+      parameters:
+        - in: query
+          name: tipo
+          schema:
+            type: string
+            enum: [PROPIO, EXTERNO]
+      responses:
+        "200":
+          description: Lista de conductores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Driver"
+    post:
+      operationId: createDriver
+      tags: [catalogs]
+      summary: Crear conductor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverInput"
+      responses:
+        "201":
+          description: Conductor creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Driver"
+
+  /drivers/{id}:
+    put:
+      operationId: updateDriver
+      tags: [catalogs]
+      summary: Actualizar conductor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverUpdate"
+      responses:
+        "200":
+          description: Conductor actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Driver"
+    delete:
+      operationId: deleteDriver
+      tags: [catalogs]
+      summary: Eliminar conductor
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Eliminado
+
+  # ─── SUCURSALES ───────────────────────────────────────────────────────────
+  /branches:
+    get:
+      operationId: listBranches
+      tags: [catalogs]
+      summary: Listar sucursales
+      responses:
+        "200":
+          description: Lista de sucursales
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Branch"
+    post:
+      operationId: createBranch
+      tags: [catalogs]
+      summary: Crear sucursal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BranchInput"
+      responses:
+        "201":
+          description: Sucursal creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Branch"
+
+  # ─── SERVICIOS ───────────────────────────────────────────────────────────
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      summary: Listar servicios
+      parameters:
+        - in: query
+          name: estatus
+          schema:
+            type: string
+            enum: [PENDIENTE, PROGRAMADO, EN_TRANSITO, ENTREGADO, CANCELADO, TERMINADO]
+        - in: query
+          name: fecha_desde
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: fecha_hasta
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: conductor_id
+          schema:
+            type: integer
+        - in: query
+          name: vehiculo_id
+          schema:
+            type: integer
+        - in: query
+          name: operacion
+          schema:
+            type: string
+            enum: [E, R, CF, RU]
+        - in: query
+          name: tipo_servicio
+          schema:
+            type: string
+            enum: [LOCAL, FORANEO]
+      responses:
+        "200":
+          description: Lista de servicios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+
+    post:
+      operationId: createService
+      tags: [services]
+      summary: Crear servicio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceInput"
+      responses:
+        "201":
+          description: Servicio creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+
+  /services/{id}:
+    get:
+      operationId: getService
+      tags: [services]
+      summary: Obtener servicio
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Servicio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+
+    put:
+      operationId: updateService
+      tags: [services]
+      summary: Actualizar servicio
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceUpdate"
+      responses:
+        "200":
+          description: Servicio actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+
+    delete:
+      operationId: deleteService
+      tags: [services]
+      summary: Cancelar / eliminar servicio
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Eliminado
+
+  /services/{id}/status:
+    patch:
+      operationId: updateServiceStatus
+      tags: [services]
+      summary: Cambiar estatus de servicio
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceStatusInput"
+      responses:
+        "200":
+          description: Estatus actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+
+  /services/today:
+    get:
+      operationId: getTodayServices
+      tags: [services]
+      summary: Servicios del día (programados hoy)
+      responses:
+        "200":
+          description: Servicios de hoy
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+
+  /services/pending-collection:
+    get:
+      operationId: listPendingCollection
+      tags: [services]
+      summary: Servicios pendientes de recolección
+      responses:
+        "200":
+          description: Pendientes de recolección
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+
+  # ─── COTIZACIONES ─────────────────────────────────────────────────────────
+  /quotes:
+    post:
+      operationId: createQuote
+      tags: [quotes]
+      summary: Generar cotización automática
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteRequest"
+      responses:
+        "200":
+          description: Cotización generada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+
+    get:
+      operationId: listQuotes
+      tags: [quotes]
+      summary: Listar cotizaciones
+      parameters:
+        - in: query
+          name: estatus
+          schema:
+            type: string
+            enum: [BORRADOR, ENVIADA, ACEPTADA, RECHAZADA, EXPIRADA]
+      responses:
+        "200":
+          description: Cotizaciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quote"
+
+  /quotes/{id}:
+    get:
+      operationId: getQuote
+      tags: [quotes]
+      summary: Obtener cotización
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Cotización
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+
+  /quotes/postal-zones:
+    get:
+      operationId: listPostalZones
+      tags: [quotes]
+      summary: Zonas tarifarias por código postal
+      parameters:
+        - in: query
+          name: cp
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Zona y tarifa
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostalZone"
+
+  /quotes/validate-identity:
+    post:
+      operationId: validateIdentity
+      tags: [quotes]
+      summary: Validar identidad persona física/moral
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IdentityValidationRequest"
+      responses:
+        "200":
+          description: Resultado de validación
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdentityValidationResult"
+
+  # ─── OPTIMIZACIÓN DE RUTAS ────────────────────────────────────────────────
+  /routes/optimize:
+    post:
+      operationId: optimizeRoutes
+      tags: [routes]
+      summary: Optimización IA de rutas con Groq
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RouteOptimizationRequest"
+      responses:
+        "200":
+          description: Rutas optimizadas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RouteOptimizationResult"
+
+  /routes/active:
+    get:
+      operationId: listActiveRoutes
+      tags: [routes]
+      summary: Rutas activas en tiempo real
+      responses:
+        "200":
+          description: Rutas activas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActiveRoute"
+
+  # ─── REPORTES / KPIs ─────────────────────────────────────────────────────
+  /reports/kpis:
+    get:
+      operationId: getKpis
+      tags: [reports]
+      summary: KPIs principales del dashboard
+      parameters:
+        - in: query
+          name: periodo
+          schema:
+            type: string
+            enum: [hoy, semana, mes, trimestre]
+            default: mes
+      responses:
+        "200":
+          description: KPIs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KpiSummary"
+
+  /reports/delays:
+    get:
+      operationId: getDelayReport
+      tags: [reports]
+      summary: Reporte de retrasos por sucursal
+      parameters:
+        - in: query
+          name: fecha_desde
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: fecha_hasta
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Reporte de retrasos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DelayReport"
+
+  /reports/driver-productivity:
+    get:
+      operationId: getDriverProductivity
+      tags: [reports]
+      summary: Productividad de conductores
+      parameters:
+        - in: query
+          name: periodo
+          schema:
+            type: string
+            enum: [semana, mes, trimestre]
+            default: mes
+      responses:
+        "200":
+          description: Productividad por conductor
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DriverProductivity"
+
+  /reports/costs:
+    get:
+      operationId: getCostReport
+      tags: [reports]
+      summary: Costos vs ingresos
+      parameters:
+        - in: query
+          name: periodo
+          schema:
+            type: string
+            enum: [mes, trimestre, anio]
+            default: mes
+      responses:
+        "200":
+          description: Costos e ingresos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CostReport"
+
+  /reports/service-activity:
+    get:
+      operationId: getServiceActivity
+      tags: [reports]
+      summary: Actividad reciente de servicios (feed)
+      responses:
+        "200":
+          description: Actividad reciente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  # ─── GOOGLE SHEETS ────────────────────────────────────────────────────────
+  /sheets/sync:
+    post:
+      operationId: syncSheets
+      tags: [sheets]
+      summary: Sincronizar datos con Google Sheets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncRequest"
+      responses:
+        "200":
+          description: Sincronización completada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResult"
+
+  /sheets/status:
+    get:
+      operationId: getSheetsStatus
+      tags: [sheets]
+      summary: Estado de la conexión con Google Sheets
+      responses:
+        "200":
+          description: Estado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SheetsStatus"
+
+  /sheets/import:
+    post:
+      operationId: importFromSheets
+      tags: [sheets]
+      summary: Importar datos desde hoja REPORTE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportRequest"
+      responses:
+        "200":
+          description: Importación completada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
+
+# ─── SCHEMAS ──────────────────────────────────────────────────────────────────
 components:
   schemas:
     HealthStatus:
@@ -31,6 +914,939 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    # AUTH
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    AuthSession:
+      type: object
+      required: [user, token]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+
+    User:
+      type: object
+      required: [id, email, nombre, rol]
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        nombre:
+          type: string
+        rol:
+          type: string
+          enum: [OPERACIONES, TRAFICO, VENDEDOR, GERENCIA, ADMIN]
+        sucursal:
+          type: ["string", "null"]
+
+    # CLIENTES
+    Client:
+      type: object
+      required: [id, cliente, obra]
+      properties:
+        id:
+          type: integer
+        cliente:
+          type: string
+        obra:
+          type: string
+        comentarios_operaciones:
+          type: ["string", "null"]
+        calificacion:
+          type: ["string", "null"]
+          enum: [bueno, regular, malo, null]
+        sector_alimenticio:
+          type: boolean
+        sector_automotriz:
+          type: boolean
+        sector_construccion:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    ClientInput:
+      type: object
+      required: [cliente, obra]
+      properties:
+        cliente:
+          type: string
+        obra:
+          type: string
+        comentarios_operaciones:
+          type: string
+        calificacion:
+          type: string
+          enum: [bueno, regular, malo]
+        sector_alimenticio:
+          type: boolean
+        sector_automotriz:
+          type: boolean
+        sector_construccion:
+          type: boolean
+
+    ClientUpdate:
+      type: object
+      properties:
+        cliente:
+          type: string
+        obra:
+          type: string
+        comentarios_operaciones:
+          type: string
+        calificacion:
+          type: string
+        sector_alimenticio:
+          type: boolean
+        sector_automotriz:
+          type: boolean
+        sector_construccion:
+          type: boolean
+
+    # VEHÍCULOS
+    Vehicle:
+      type: object
+      required: [id, placa, capacidad, tipo_vehiculo]
+      properties:
+        id:
+          type: integer
+        placa:
+          type: string
+        capacidad:
+          type: number
+        ubicacion:
+          type: ["string", "null"]
+        conductor_asignado:
+          type: ["string", "null"]
+        tipo_vehiculo:
+          type: string
+        disponible:
+          type: boolean
+
+    VehicleInput:
+      type: object
+      required: [placa, capacidad, tipo_vehiculo]
+      properties:
+        placa:
+          type: string
+        capacidad:
+          type: number
+        ubicacion:
+          type: string
+        conductor_asignado:
+          type: string
+        tipo_vehiculo:
+          type: string
+
+    VehicleUpdate:
+      type: object
+      properties:
+        placa:
+          type: string
+        capacidad:
+          type: number
+        ubicacion:
+          type: string
+        conductor_asignado:
+          type: string
+        tipo_vehiculo:
+          type: string
+        disponible:
+          type: boolean
+
+    # EQUIPOS
+    Equipment:
+      type: object
+      required: [id, modelo, serie]
+      properties:
+        id:
+          type: integer
+        id_equipo:
+          type: string
+        modelo:
+          type: string
+        serie:
+          type: string
+        tipo:
+          type: ["string", "null"]
+        disponible:
+          type: boolean
+
+    EquipmentInput:
+      type: object
+      required: [modelo, serie]
+      properties:
+        modelo:
+          type: string
+        serie:
+          type: string
+        tipo:
+          type: string
+
+    EquipmentUpdate:
+      type: object
+      properties:
+        modelo:
+          type: string
+        serie:
+          type: string
+        tipo:
+          type: string
+        disponible:
+          type: boolean
+
+    # CONDUCTORES
+    Driver:
+      type: object
+      required: [id, nombre, tipo]
+      properties:
+        id:
+          type: integer
+        id_conductor:
+          type: string
+        nombre:
+          type: string
+        tipo:
+          type: string
+          enum: [PROPIO, EXTERNO]
+        activo:
+          type: boolean
+        servicios_mes:
+          type: integer
+
+    DriverInput:
+      type: object
+      required: [nombre, tipo]
+      properties:
+        nombre:
+          type: string
+        tipo:
+          type: string
+          enum: [PROPIO, EXTERNO]
+
+    DriverUpdate:
+      type: object
+      properties:
+        nombre:
+          type: string
+        tipo:
+          type: string
+          enum: [PROPIO, EXTERNO]
+        activo:
+          type: boolean
+
+    # SUCURSALES
+    Branch:
+      type: object
+      required: [id, nombre]
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        ciudad:
+          type: ["string", "null"]
+        latitud:
+          type: ["number", "null"]
+        longitud:
+          type: ["number", "null"]
+
+    BranchInput:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+        ciudad:
+          type: string
+        latitud:
+          type: number
+        longitud:
+          type: number
+
+    # SERVICIOS
+    Service:
+      type: object
+      required: [id, estatus, operacion]
+      properties:
+        id:
+          type: integer
+        fecha_solicitud:
+          type: ["string", "null"]
+          format: date
+        fecha_programacion:
+          type: ["string", "null"]
+          format: date
+        horario:
+          type: ["string", "null"]
+        fecha_facturacion:
+          type: ["string", "null"]
+          format: date
+        sucursal_salida:
+          type: ["string", "null"]
+        sucursal_vendedor:
+          type: ["string", "null"]
+        vendedor:
+          type: ["string", "null"]
+        operacion:
+          type: string
+          enum: [E, R, CF, RU]
+        pedido:
+          type: ["string", "null"]
+        remision:
+          type: ["string", "null"]
+        cliente:
+          type: ["string", "null"]
+        obra:
+          type: ["string", "null"]
+        direccion:
+          type: ["string", "null"]
+        latitud:
+          type: ["number", "null"]
+        longitud:
+          type: ["number", "null"]
+        modelo:
+          type: ["string", "null"]
+        serie:
+          type: ["string", "null"]
+        dias_renta:
+          type: ["integer", "null"]
+        costo_remision:
+          type: ["number", "null"]
+        costo_tabulador:
+          type: ["number", "null"]
+        costo_flete_ext:
+          type: ["number", "null"]
+        diferencia:
+          type: ["number", "null"]
+        factura:
+          type: ["string", "null"]
+        fecha_entrega:
+          type: ["string", "null"]
+          format: date
+        transporte:
+          type: ["string", "null"]
+          enum: [PROPIO, EXTERNO, null]
+        conductor:
+          type: ["string", "null"]
+        conductor_id:
+          type: ["integer", "null"]
+        vehiculo_id:
+          type: ["integer", "null"]
+        hora_programada:
+          type: ["string", "null"]
+        hora_reprogramada:
+          type: ["string", "null"]
+        carta_porte:
+          type: boolean
+        correo_programacion:
+          type: boolean
+        correo_confirmacion:
+          type: boolean
+        evidencia:
+          type: boolean
+        contacto_nombre:
+          type: ["string", "null"]
+        contacto_telefono:
+          type: ["string", "null"]
+        estatus:
+          type: string
+          enum: [PENDIENTE, PROGRAMADO, EN_TRANSITO, ENTREGADO, CANCELADO, TERMINADO]
+        comentarios_op:
+          type: ["string", "null"]
+        comentarios_traf:
+          type: ["string", "null"]
+        horas_retraso:
+          type: ["number", "null"]
+        retraso_total:
+          type: ["number", "null"]
+        tipo_servicio:
+          type: ["string", "null"]
+          enum: [LOCAL, FORANEO, null]
+        kms_recorridos:
+          type: ["number", "null"]
+        dias_retraso:
+          type: ["integer", "null"]
+        es_retorno_base:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ServiceInput:
+      type: object
+      required: [operacion, estatus]
+      properties:
+        fecha_solicitud:
+          type: string
+          format: date
+        fecha_programacion:
+          type: string
+          format: date
+        horario:
+          type: string
+        sucursal_salida:
+          type: string
+        sucursal_vendedor:
+          type: string
+        vendedor:
+          type: string
+        operacion:
+          type: string
+          enum: [E, R, CF, RU]
+        pedido:
+          type: string
+        remision:
+          type: string
+        cliente:
+          type: string
+        obra:
+          type: string
+        direccion:
+          type: string
+        latitud:
+          type: number
+        longitud:
+          type: number
+        modelo:
+          type: string
+        serie:
+          type: string
+        dias_renta:
+          type: integer
+        costo_remision:
+          type: number
+        costo_tabulador:
+          type: number
+        costo_flete_ext:
+          type: number
+        transporte:
+          type: string
+          enum: [PROPIO, EXTERNO]
+        conductor_id:
+          type: integer
+        vehiculo_id:
+          type: integer
+        hora_programada:
+          type: string
+        contacto_nombre:
+          type: string
+        contacto_telefono:
+          type: string
+        estatus:
+          type: string
+          enum: [PENDIENTE, PROGRAMADO, EN_TRANSITO, ENTREGADO, CANCELADO, TERMINADO]
+        tipo_servicio:
+          type: string
+          enum: [LOCAL, FORANEO]
+        es_retorno_base:
+          type: boolean
+
+    ServiceUpdate:
+      type: object
+      properties:
+        fecha_programacion:
+          type: string
+          format: date
+        horario:
+          type: string
+        conductor_id:
+          type: integer
+        vehiculo_id:
+          type: integer
+        hora_programada:
+          type: string
+        hora_reprogramada:
+          type: string
+        carta_porte:
+          type: boolean
+        correo_programacion:
+          type: boolean
+        correo_confirmacion:
+          type: boolean
+        evidencia:
+          type: boolean
+        comentarios_op:
+          type: string
+        comentarios_traf:
+          type: string
+        estatus:
+          type: string
+          enum: [PENDIENTE, PROGRAMADO, EN_TRANSITO, ENTREGADO, CANCELADO, TERMINADO]
+        factura:
+          type: string
+        costo_flete_ext:
+          type: number
+        diferencia:
+          type: number
+        kms_recorridos:
+          type: number
+
+    ServiceStatusInput:
+      type: object
+      required: [estatus]
+      properties:
+        estatus:
+          type: string
+          enum: [PENDIENTE, PROGRAMADO, EN_TRANSITO, ENTREGADO, CANCELADO, TERMINADO]
+        comentario:
+          type: string
+
+    # COTIZACIONES
+    QuoteRequest:
+      type: object
+      required: [codigo_postal, modelo, dias_renta, tipo_persona]
+      properties:
+        codigo_postal:
+          type: string
+        modelo:
+          type: string
+        serie:
+          type: string
+        dias_renta:
+          type: integer
+        tipo_persona:
+          type: string
+          enum: [FISICA, MORAL]
+        nombre_empresa:
+          type: string
+        rfc:
+          type: string
+        nombre_contacto:
+          type: string
+        telefono:
+          type: string
+        email:
+          type: string
+        direccion_entrega:
+          type: string
+        notas:
+          type: string
+
+    Quote:
+      type: object
+      required: [id, estatus, monto_total]
+      properties:
+        id:
+          type: integer
+        folio:
+          type: string
+        codigo_postal:
+          type: string
+        zona:
+          type: string
+        modelo:
+          type: string
+        serie:
+          type: ["string", "null"]
+        dias_renta:
+          type: integer
+        tipo_persona:
+          type: string
+          enum: [FISICA, MORAL]
+        nombre_empresa:
+          type: ["string", "null"]
+        rfc:
+          type: ["string", "null"]
+        nombre_contacto:
+          type: ["string", "null"]
+        telefono:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        costo_flete:
+          type: number
+        costo_renta_diaria:
+          type: number
+        subtotal:
+          type: number
+        iva:
+          type: number
+        monto_total:
+          type: number
+        estatus:
+          type: string
+          enum: [BORRADOR, ENVIADA, ACEPTADA, RECHAZADA, EXPIRADA]
+        identidad_verificada:
+          type: boolean
+        validacion_resultado:
+          type: ["string", "null"]
+        created_at:
+          type: string
+          format: date-time
+        vigencia:
+          type: string
+          format: date-time
+
+    PostalZone:
+      type: object
+      required: [codigo_postal, zona, tarifa_flete]
+      properties:
+        codigo_postal:
+          type: string
+        municipio:
+          type: string
+        estado:
+          type: string
+        zona:
+          type: string
+        tarifa_flete:
+          type: number
+        tiempo_estimado_hrs:
+          type: number
+
+    IdentityValidationRequest:
+      type: object
+      required: [tipo_persona, rfc]
+      properties:
+        tipo_persona:
+          type: string
+          enum: [FISICA, MORAL]
+        rfc:
+          type: string
+        nombre:
+          type: string
+        curp:
+          type: string
+
+    IdentityValidationResult:
+      type: object
+      required: [valido, tipo_persona]
+      properties:
+        valido:
+          type: boolean
+        tipo_persona:
+          type: string
+          enum: [FISICA, MORAL]
+        nombre_registrado:
+          type: ["string", "null"]
+        rfc_verificado:
+          type: boolean
+        observaciones:
+          type: ["string", "null"]
+
+    # RUTAS
+    RouteOptimizationRequest:
+      type: object
+      required: [fecha, vehicle_ids, service_ids]
+      properties:
+        fecha:
+          type: string
+          format: date
+        vehicle_ids:
+          type: array
+          items:
+            type: integer
+        service_ids:
+          type: array
+          items:
+            type: integer
+        base_latitud:
+          type: number
+        base_longitud:
+          type: number
+        incluir_retornos:
+          type: boolean
+          description: Si true, se calculan retornos a base pero NO se registran como servicios
+
+    RouteOptimizationResult:
+      type: object
+      required: [rutas, resumen]
+      properties:
+        rutas:
+          type: array
+          items:
+            $ref: "#/components/schemas/OptimizedVehicleRoute"
+        resumen:
+          $ref: "#/components/schemas/RouteOptimizationSummary"
+        ai_reasoning:
+          type: string
+          description: Razonamiento de Groq AI
+
+    OptimizedVehicleRoute:
+      type: object
+      required: [vehiculo_id, paradas]
+      properties:
+        vehiculo_id:
+          type: integer
+        conductor:
+          type: string
+        placa:
+          type: string
+        paradas:
+          type: array
+          items:
+            $ref: "#/components/schemas/RouteStop"
+        distancia_total_km:
+          type: number
+        tiempo_estimado_min:
+          type: integer
+        incluye_retorno:
+          type: boolean
+
+    RouteStop:
+      type: object
+      required: [orden, tipo, latitud, longitud]
+      properties:
+        orden:
+          type: integer
+        tipo:
+          type: string
+          enum: [ENTREGA, RETIRO, BASE]
+        servicio_id:
+          type: ["integer", "null"]
+        cliente:
+          type: ["string", "null"]
+        direccion:
+          type: ["string", "null"]
+        latitud:
+          type: number
+        longitud:
+          type: number
+        hora_estimada:
+          type: ["string", "null"]
+        es_retorno_base:
+          type: boolean
+
+    RouteOptimizationSummary:
+      type: object
+      properties:
+        total_servicios:
+          type: integer
+        total_vehiculos:
+          type: integer
+        distancia_total_km:
+          type: number
+        tiempo_total_min:
+          type: integer
+        retornos_excluidos_de_servicios:
+          type: integer
+
+    ActiveRoute:
+      type: object
+      required: [vehiculo_id, estatus]
+      properties:
+        vehiculo_id:
+          type: integer
+        placa:
+          type: string
+        conductor:
+          type: string
+        estatus:
+          type: string
+        servicios_pendientes:
+          type: integer
+        servicios_completados:
+          type: integer
+        posicion_actual_lat:
+          type: ["number", "null"]
+        posicion_actual_lng:
+          type: ["number", "null"]
+
+    # REPORTES
+    KpiSummary:
+      type: object
+      properties:
+        total_servicios:
+          type: integer
+        servicios_completados:
+          type: integer
+        servicios_pendientes:
+          type: integer
+        tasa_cumplimiento:
+          type: number
+        horas_retraso_promedio:
+          type: number
+        costo_total_fletes:
+          type: number
+        ingreso_total:
+          type: number
+        diferencia_neta:
+          type: number
+        servicios_locales:
+          type: integer
+        servicios_foraneos:
+          type: integer
+        conductores_activos:
+          type: integer
+        vehiculos_activos:
+          type: integer
+        cotizaciones_enviadas:
+          type: integer
+        cotizaciones_aceptadas:
+          type: integer
+
+    DelayReport:
+      type: object
+      properties:
+        sucursal:
+          type: string
+        total_servicios:
+          type: integer
+        con_retraso:
+          type: integer
+        horas_retraso_promedio:
+          type: number
+        peor_retraso_hrs:
+          type: number
+
+    DriverProductivity:
+      type: object
+      properties:
+        conductor_id:
+          type: integer
+        nombre:
+          type: string
+        tipo:
+          type: string
+        total_servicios:
+          type: integer
+        servicios_puntual:
+          type: integer
+        km_recorridos:
+          type: number
+        horas_retraso_total:
+          type: number
+        calificacion:
+          type: number
+
+    CostReport:
+      type: object
+      properties:
+        periodo:
+          type: string
+        costo_flete_propio:
+          type: number
+        costo_flete_externo:
+          type: number
+        ingreso_remisiones:
+          type: number
+        diferencia_neta:
+          type: number
+        por_mes:
+          type: array
+          items:
+            $ref: "#/components/schemas/CostByMonth"
+
+    CostByMonth:
+      type: object
+      properties:
+        mes:
+          type: string
+        costo:
+          type: number
+        ingreso:
+          type: number
+        diferencia:
+          type: number
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        tipo:
+          type: string
+          enum: [SERVICIO, COTIZACION, SYNC, ALERTA]
+        descripcion:
+          type: string
+        usuario:
+          type: ["string", "null"]
+        servicio_id:
+          type: ["integer", "null"]
+        estatus:
+          type: ["string", "null"]
+        created_at:
+          type: string
+          format: date-time
+
+    # SHEETS
+    SyncRequest:
+      type: object
+      required: [direction]
+      properties:
+        direction:
+          type: string
+          enum: [import, export, bidirectional]
+        sheets:
+          type: array
+          items:
+            type: string
+          description: Hojas a sincronizar (vacío = todas)
+
+    SyncResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        registros_importados:
+          type: integer
+        registros_exportados:
+          type: integer
+        errores:
+          type: array
+          items:
+            type: string
+        ultima_sincronizacion:
+          type: string
+          format: date-time
+
+    SheetsStatus:
+      type: object
+      properties:
+        conectado:
+          type: boolean
+        spreadsheet_id:
+          type: ["string", "null"]
+        spreadsheet_name:
+          type: ["string", "null"]
+        ultima_sincronizacion:
+          type: ["string", "null"]
+          format: date-time
+        hojas_disponibles:
+          type: array
+          items:
+            type: string
+
+    ImportRequest:
+      type: object
+      properties:
+        hoja:
+          type: string
+          default: REPORTE
+        desde_fila:
+          type: integer
+        sobrescribir:
+          type: boolean
+          default: false
+
+    ImportResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        total_filas:
+          type: integer
+        importados:
+          type: integer
+        omitidos:
+          type: integer
+        errores:
+          type: array
+          items:
+            type: string

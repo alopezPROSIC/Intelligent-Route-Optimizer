@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "PROSIC – Plataforma de Logística"
+version = "1.0.0"
+id = "artifacts/prosic"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26179
+
+[services.development]
+run = "pnpm --filter @workspace/prosic run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/prosic", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/prosic/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26179"
+BASE_PATH = "/"

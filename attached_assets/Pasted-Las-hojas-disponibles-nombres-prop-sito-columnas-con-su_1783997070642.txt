@@ -1,0 +1,284 @@
+Las hojas disponibles (nombres, propósito, columnas con sus índices y nombres).
+
+Las relaciones entre hojas (claves foráneas, referencias a IDs).
+
+Los tipos de datos esperados (fecha, número, booleano, texto).
+
+Propuesta: Crear un archivo JSON que describa toda la estructura. Este archivo puede estar alojado en la misma hoja (en una pestaña oculta) o en un repositorio de configuración.
+
+📄 ARCHIVO DE CONFIGURACIÓN (JSON)
+json
+{
+  "version": "1.0",
+  "spreadsheet_name": "Copia de REPORTE PROSIC OPERACIONES",
+  "sheets": {
+    "REPORTE": {
+      "type": "input",
+      "description": "Hoja principal donde los usuarios ingresan los datos",
+      "columns": {
+        "id": { "index": 0, "name": "$4.00", "type": "integer" },
+        "fecha_llegada_solicitud": { "index": 1, "name": "FECHA LLEGADA DE SOLICITUD A TRAFICO", "type": "date" },
+        "fecha_programacion": { "index": 2, "name": "FECHA A PARTIR DE LA QUE SE CONSIDRAR PARA PROGRAMACIÓN", "type": "date" },
+        "horario": { "index": 3, "name": "HORARIO", "type": "time" },
+        "fecha_facturacion": { "index": 4, "name": "FECHA FINAL DE ULTIMA FACTURA (APLICA SOLO RECOLECCION)", "type": "date" },
+        "sucursal_salida": { "index": 5, "name": "SUCURSAL DONDE SALE EL EQUIPO", "type": "string" },
+        "sucursal_vendedor": { "index": 6, "name": "SUCURSAL DEL VENDEDOR", "type": "string" },
+        "vendedor": { "index": 7, "name": "VENDEDOR", "type": "string" },
+        "operacion": { "index": 8, "name": "OPERACIÓN: (E) Entrega (R) Retiro (CF) Cambio fisico (RU) Reubicación", "type": "string", "enum": ["E", "R", "CF", "RU"] },
+        "pedido": { "index": 9, "name": "PEDIDO", "type": "string" },
+        "remision": { "index": 10, "name": "REMISION", "type": "string" },
+        "cliente": { "index": 11, "name": "CLIENTE", "type": "string", "reference": "CLIENTES.CLIENTE" },
+        "obra": { "index": 12, "name": "NOMBRE DE OBRA", "type": "string", "reference": "CLIENTES.OBRA" },
+        "direccion": { "index": 13, "name": "DIRECCION", "type": "string" },
+        "latitud": { "index": 14, "name": "LATITUD", "type": "float" },
+        "longitud": { "index": 15, "name": "LONGUTUD", "type": "float" },
+        "modelo": { "index": 16, "name": "MODELO", "type": "string", "reference": "EQUIPOS.modelo" },
+        "serie": { "index": 17, "name": "SERIE", "type": "string", "reference": "EQUIPOS.serie" },
+        "dias_renta": { "index": 18, "name": "DIAS DE RENTA", "type": "integer" },
+        "dias_pend_facturacion": { "index": 19, "name": "DIAS PENDIENTES DE FACTURACIÓN (TIMBRADA)", "type": "integer" },
+        "costo_remision": { "index": 20, "name": "COSTO REMISION (FLETE SENCILLO)", "type": "float" },
+        "costo_tabulador": { "index": 21, "name": "COSTO TABULADOR PROSIC", "type": "float" },
+        "costo_flete_ext": { "index": 22, "name": "COSTO FLETE EXTERNO SIN IVA", "type": "float" },
+        "diferencia": { "index": 23, "name": "DIFERENCIA", "type": "float" },
+        "factura": { "index": 24, "name": "# FACTURA", "type": "string" },
+        "fecha_entrega": { "index": 25, "name": "FECHA DE ENTREGA", "type": "date" },
+        "transporte": { "index": 26, "name": "TRANSPORTE (PROPIO / EXTERNO)", "type": "string", "enum": ["PROPIO", "EXTERNO"] },
+        "conductor": { "index": 27, "name": "CONDUCTOR", "type": "string", "reference": "conductores_proveedores.nombre" },
+        "hora_programada": { "index": 28, "name": "HORA QUE SE PROGRAMA SERVICIO", "type": "time" },
+        "hora_reprogramada": { "index": 29, "name": "HORA QUE SE REPROGRAMA SERVICIO", "type": "time" },
+        "carta_porte": { "index": 30, "name": "CARTA PORTE", "type": "boolean" },
+        "correo_programacion": { "index": 31, "name": "CORREO PROGRAMACION DE SERVICIO", "type": "boolean" },
+        "correo_confirmacion": { "index": 32, "name": "CORREO DE CONFIRMACION DE SERVICIO", "type": "boolean" },
+        "evidencia": { "index": 33, "name": "EVIDENCIA", "type": "boolean" },
+        "contacto_nombre": { "index": 34, "name": "NOMBRE DE CONTACTO", "type": "string" },
+        "contacto_telefono": { "index": 35, "name": "NUMERO DE CONTACTO", "type": "string" },
+        "estatus": { "index": 36, "name": "ESTATUS", "type": "string", "enum": ["PENDIENTE", "PROGRAMADO", "EN_TRANSITO", "ENTREGADO", "CANCELADO", "TERMINADO"] },
+        "comentarios_op": { "index": 37, "name": "COMENTARIOS OPERACIONES", "type": "string" },
+        "comentarios_traf": { "index": 38, "name": "COMENTARIOS TRAFICO", "type": "string" },
+        "dias_pend_rec": { "index": 39, "name": "DIAS PENDIENTES POR REALIZAR LA RECOLECCION (HORAS)", "type": "float" },
+        "dias_pend_rec2": { "index": 40, "name": "DIAS PENDIENTES POR REALIZAR LA RECOLECCION (HORAS)", "type": "float" },
+        "horas_retraso": { "index": 41, "name": "HORAS DE RETRASO MISMO DIA", "type": "float" },
+        "retraso_total": { "index": 42, "name": "RETRASO TOTAL", "type": "float" },
+        "tipo_servicio": { "index": 43, "name": "TIPO DE SERVICIO", "type": "string", "enum": ["LOCAL", "FORÁNEO"] },
+        "kms_recorridos": { "index": 44, "name": "KMS RECORRIDOS", "type": "float" },
+        "dias_retraso": { "index": 45, "name": "DIAS DE RETRASO", "type": "integer" }
+      }
+    },
+    "CLIENTES": {
+      "type": "master",
+      "description": "Catálogo de clientes y obras",
+      "columns": {
+        "cliente": { "index": 0, "name": "CLIENTE", "type": "string" },
+        "obra": { "index": 1, "name": "OBRA", "type": "string" },
+        "comentarios_operaciones": { "index": 2, "name": "COMENTARIOS OPERACIONES", "type": "string" },
+        "bueno": { "index": 3, "name": "BUENO", "type": "string" },
+        "regular": { "index": 4, "name": "REGULAR", "type": "string" },
+        "malo": { "index": 5, "name": "MALO", "type": "string" },
+        "alimenticio": { "index": 6, "name": "ALIMENTICIO", "type": "boolean" },
+        "automotriz": { "index": 7, "name": "AUTOMOTIZ", "type": "boolean" },
+        "construccion": { "index": 8, "name": "CONSTRUCCION / MANTTO.", "type": "boolean" }
+      }
+    },
+    "flota": {
+      "type": "master",
+      "description": "Catálogo de equipos (maquinaria) generado por normalización",
+      "columns": {
+        "id_equipo": { "index": 0, "name": "id_equipo", "type": "string" },
+        "modelo": { "index": 1, "name": "modelo", "type": "string" },
+        "serie": { "index": 2, "name": "serie", "type": "string" }
+      }
+    },
+    "equipos": {
+      "type": "master",
+      "description": "Catálogo de equipos con tipo",
+      "columns": {
+        "id_equipo": { "index": 0, "name": "id_equipo", "type": "string" },
+        "modelo": { "index": 1, "name": "modelo", "type": "string" },
+        "serie": { "index": 2, "name": "serie", "type": "string" },
+        "tipo": { "index": 3, "name": "tipo", "type": "string" }
+      }
+    },
+    "vehiculos": {
+      "type": "master",
+      "description": "Catálogo de vehículos de transporte",
+      "columns": {
+        "id_vehiculo": { "index": 0, "name": "id_vehiculo", "type": "string" },
+        "placa": { "index": 1, "name": "placa", "type": "string" },
+        "capacidad": { "index": 2, "name": "capacidad", "type": "float" },
+        "ubicacion": { "index": 3, "name": "ubicacion", "type": "string" },
+        "conductor_asignado": { "index": 4, "name": "conductor_asignado", "type": "string" },
+        "tipo_vehiculo": { "index": 5, "name": "tipo_vehiculo", "type": "string" }
+      }
+    },
+    "flota_vehiculos": {
+      "type": "input",
+      "description": "Hoja de entrada para vehículos (el usuario pega aquí)",
+      "columns": {
+        "placa": { "index": 0, "name": "placa", "type": "string" },
+        "capacidad": { "index": 1, "name": "capacidad", "type": "float" },
+        "ubicacion": { "index": 2, "name": "ubicacion", "type": "string" },
+        "conductor_asignado": { "index": 3, "name": "conductor_asignado", "type": "string" },
+        "tipo_vehiculo": { "index": 4, "name": "tipo_vehiculo", "type": "string" }
+      }
+    },
+    "conductores_proveedores": {
+      "type": "master",
+      "description": "Catálogo de conductores/proveedores unificado",
+      "columns": {
+        "id_conductor": { "index": 0, "name": "id_conductor", "type": "string" },
+        "nombre": { "index": 1, "name": "nombre", "type": "string" },
+        "tipo": { "index": 2, "name": "tipo", "type": "string", "enum": ["PROPIO", "EXTERNO"] }
+      }
+    },
+    "servicios": {
+      "type": "normalized",
+      "description": "Hoja normalizada de servicios (generada automáticamente)",
+      "columns": {
+        "id_servicio": { "index": 0, "name": "id_servicio", "type": "string" },
+        "fecha_solicitud": { "index": 1, "name": "fecha_solicitud", "type": "date" },
+        "fecha_programacion": { "index": 2, "name": "fecha_programacion", "type": "date" },
+        "horario": { "index": 3, "name": "horario", "type": "time" },
+        "sucursal_salida": { "index": 4, "name": "sucursal_salida", "type": "string" },
+        "sucursal_vendedor": { "index": 5, "name": "sucursal_vendedor", "type": "string" },
+        "vendedor": { "index": 6, "name": "vendedor", "type": "string" },
+        "operacion": { "index": 7, "name": "operacion", "type": "string" },
+        "pedido": { "index": 8, "name": "pedido", "type": "string" },
+        "remision": { "index": 9, "name": "remision", "type": "string" },
+        "cliente": { "index": 10, "name": "cliente", "type": "string" },
+        "obra": { "index": 11, "name": "obra", "type": "string" },
+        "direccion": { "index": 12, "name": "direccion", "type": "string" },
+        "latitud": { "index": 13, "name": "latitud", "type": "float" },
+        "longitud": { "index": 14, "name": "longitud", "type": "float" },
+        "id_equipo": { "index": 15, "name": "id_equipo", "type": "string" },
+        "dias_renta": { "index": 16, "name": "dias_renta", "type": "integer" },
+        "dias_pend_fact": { "index": 17, "name": "dias_pend_fact", "type": "integer" },
+        "costo_remision": { "index": 18, "name": "costo_remision", "type": "float" },
+        "costo_tabulador": { "index": 19, "name": "costo_tabulador", "type": "float" },
+        "costo_flete_ext": { "index": 20, "name": "costo_flete_ext", "type": "float" },
+        "diferencia": { "index": 21, "name": "diferencia", "type": "float" },
+        "factura": { "index": 22, "name": "factura", "type": "string" },
+        "fecha_entrega": { "index": 23, "name": "fecha_entrega", "type": "date" },
+        "id_conductor": { "index": 24, "name": "id_conductor", "type": "string" },
+        "hora_programada": { "index": 25, "name": "hora_programada", "type": "time" },
+        "hora_reprogramada": { "index": 26, "name": "hora_reprogramada", "type": "time" },
+        "carta_porte": { "index": 27, "name": "carta_porte", "type": "boolean" },
+        "correo_prog": { "index": 28, "name": "correo_prog", "type": "boolean" },
+        "correo_conf": { "index": 29, "name": "correo_conf", "type": "boolean" },
+        "evidencia": { "index": 30, "name": "evidencia", "type": "boolean" },
+        "contacto_nombre": { "index": 31, "name": "contacto_nombre", "type": "string" },
+        "contacto_telefono": { "index": 32, "name": "contacto_telefono", "type": "string" },
+        "estatus": { "index": 33, "name": "estatus", "type": "string" },
+        "comentarios_op": { "index": 34, "name": "comentarios_op", "type": "string" },
+        "comentarios_traf": { "index": 35, "name": "comentarios_traf", "type": "string" },
+        "dias_pend_rec": { "index": 36, "name": "dias_pend_rec", "type": "float" },
+        "horas_retraso": { "index": 37, "name": "horas_retraso", "type": "float" },
+        "retraso_total": { "index": 38, "name": "retraso_total", "type": "float" },
+        "tipo_servicio": { "index": 39, "name": "tipo_servicio", "type": "string" },
+        "kms_recorridos": { "index": 40, "name": "kms_recorridos", "type": "float" },
+        "dias_retraso": { "index": 41, "name": "dias_retraso", "type": "integer" }
+      }
+    },
+    "FLETES EN FALSO": {
+      "type": "auxiliary",
+      "description": "Registro de fletes en falso",
+      "columns": {
+        "index": { "index": 0, "name": "Índice", "type": "integer" },
+        "sucursal": { "index": 1, "name": "SUCURSAL", "type": "string" },
+        "pedido": { "index": 2, "name": "PEDIDO", "type": "string" },
+        "servicio": { "index": 3, "name": "SERVICIO", "type": "string" },
+        "razon_social": { "index": 4, "name": "RAZON SOCIAL", "type": "string" },
+        "monto": { "index": 5, "name": "MONTO ANTES DE IVA", "type": "float" },
+        "borrador": { "index": 6, "name": "NUM. BORRADOR", "type": "string" },
+        "motivo": { "index": 7, "name": "MOTIVO", "type": "string" },
+        "estatus_flete": { "index": 8, "name": "ESTATUS", "type": "string" },
+        "factura_flete": { "index": 9, "name": "FACTURA", "type": "string" }
+      }
+    },
+    "EQUIPOS X MODELO": {
+      "type": "auxiliary",
+      "description": "Catálogo adicional de equipos por modelo",
+      "columns": {
+        "matricula": { "index": 0, "name": "Matrícula", "type": "string" },
+        "index": { "index": 1, "name": "Índice", "type": "integer" },
+        "marca_modelo": { "index": 2, "name": "Marca/Modelo", "type": "string" },
+        "equipo": { "index": 3, "name": "Equipo", "type": "string" }
+      }
+    }
+  },
+  "relationships": {
+    "REPORTE.cliente": { "target": "CLIENTES", "target_column": "CLIENTE" },
+    "REPORTE.obra": { "target": "CLIENTES", "target_column": "OBRA" },
+    "REPORTE.serie": { "target": "equipos", "target_column": "serie" },
+    "REPORTE.conductor": { "target": "conductores_proveedores", "target_column": "nombre" },
+    "servicios.id_equipo": { "target": "equipos", "target_column": "id_equipo" },
+    "servicios.id_conductor": { "target": "conductores_proveedores", "target_column": "id_conductor" }
+  }
+}
+🔧 CÓMO USAR ESTE JSON EN OTRO SISTEMA
+Opción 1: Alojar el JSON en una hoja oculta del mismo Spreadsheet
+Crea una nueva hoja llamada _config.
+
+En la celda A1, pega el JSON completo.
+
+El sistema puede leer esa hoja para autoconfigurarse.
+
+Ventaja: La configuración viaja con el archivo.
+
+Opción 2: Descargar el JSON desde una URL pública
+Sube el archivo a un repositorio de GitHub o a un servicio de almacenamiento.
+
+El sistema hace un GET a esa URL.
+
+Ventaja: Puedes actualizar la configuración sin modificar el spreadsheet.
+
+🐍 EJEMPLO DE CÓDIGO PYTHON PARA AUTOCONFIGURACIÓN
+python
+import gspread
+import json
+import requests
+from oauth2client.service_account import ServiceAccountCredentials
+
+# 1. Cargar configuración (desde URL o desde hoja)
+def cargar_configuracion():
+    # Opción A: Desde URL
+    config_url = "https://raw.githubusercontent.com/tu-repo/config.json"
+    response = requests.get(config_url)
+    return response.json()
+    
+    # Opción B: Desde hoja _config (necesitas autenticación primero)
+    # config_sheet = spreadsheet.worksheet("_config")
+    # return json.loads(config_sheet.acell('A1').value)
+
+# 2. Conectar a Google Sheets
+config = cargar_configuracion()
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+creds = ServiceAccountCredentials.from_json_keyfile_name("creds.json", scope)
+client = gspread.authorize(creds)
+spreadsheet = client.open(config["spreadsheet_name"])
+
+# 3. Leer una hoja usando la configuración
+sheet_name = "REPORTE"
+sheet_config = config["sheets"][sheet_name]
+worksheet = spreadsheet.worksheet(sheet_name)
+data = worksheet.get_all_records()
+
+# 4. Mapear datos a objetos con nombres amigables
+# Usamos la configuración para saber qué columna es cada campo
+for row in data:
+    # row es un dict con claves = nombres originales de columnas (ej. "FECHA LLEGADA...")
+    # Queremos convertirlo a un dict con claves = nombres lógicos (ej. "fecha_llegada_solicitud")
+    objeto = {}
+    for campo_logico, col_info in sheet_config["columns"].items():
+        nombre_original = col_info["name"]
+        objeto[campo_logico] = row.get(nombre_original)
+    # Ahora podemos usar `objeto` con nombres consistentes
+    print(objeto["pedido"], objeto["cliente"])
+✅ BENEFICIOS DE ESTA ESTRATEGIA
+Autoconfiguración total: El sistema lee el JSON y sabe exactamente qué hojas existen, qué columnas tienen y cómo se relacionan.
+
+Mantenibilidad: Si añades una columna nueva, solo actualizas el JSON (y el sistema lo detecta automáticamente).
+
+Reducción de errores: No tienes que hardcodear índices de columnas (0, 1, 2, ...) en tu código.
+
+Multilenguaje: El JSON puede ser consumido por Python, Node.js, Java, etc.
+

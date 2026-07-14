@@ -6,9 +6,10 @@ import { logger } from "../lib/logger";
 const router = Router();
 
 async function getSheetClient() {
-  // @ts-ignore – injected at runtime by Replit connectors
-  if (typeof listConnections === "function") {
-    const conns = await listConnections("google-sheet");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const globalAny = globalThis as any;
+  if (typeof globalAny.listConnections === "function") {
+    const conns = await globalAny.listConnections("google-sheet");
     return conns?.[0] ?? null;
   }
   return null;

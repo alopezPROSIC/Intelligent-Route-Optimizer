@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'wouter';
 import { useListPostalZones, useCreateQuote, useValidateIdentity, QuoteRequestTipoPersona, IdentityValidationRequestTipoPersona } from '@workspace/api-client-react';
-import { Search, ShoppingCart, LayoutGrid, List, ChevronDown, X, Loader2, ArrowRight, CheckCircle2, ShieldCheck, MapPin } from 'lucide-react';
+import { Search, ShoppingCart, LayoutGrid, List, ChevronDown, X, Loader as Loader2, ArrowRight, CircleCheck as CheckCircle2, ShieldCheck, MapPin } from 'lucide-react';
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
 import { Button } from '@/components/ui/button';
@@ -103,7 +103,7 @@ function CotizadorModal({ equipo, onClose }: { equipo?: { modelo: string; tipo: 
   const [diasRenta, setDiasRenta] = useState(1);
   const [quoteResult, setQuoteResult] = useState<{ folio: string; monto_total: number } | null>(null);
 
-  const { data: zones } = useListPostalZones({ cp: cpInput }, { query: { enabled: cpInput.length === 5 } });
+  const { data: zones } = useListPostalZones({ cp: cpInput }, { query: { queryKey: ['postal-zones', cpInput], enabled: cpInput.length === 5 } });
   const createQuote = useCreateQuote();
   const validateIdentity = useValidateIdentity();
 
@@ -115,7 +115,7 @@ function CotizadorModal({ equipo, onClose }: { equipo?: { modelo: string; tipo: 
   const [email, setEmail] = useState('');
   const [direccion, setDireccion] = useState('');
 
-  const zona = zones?.[0];
+  const zona = zones;
   const RATES: Record<string, number> = { MONTACARGAS: 350, PLATAFORMA: 280, TELEHANDLER: 420, GRUA: 500 };
   const getRentalRate = (m: string) => {
     const u = m.toUpperCase();

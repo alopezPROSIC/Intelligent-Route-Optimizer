@@ -2,9 +2,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Route, Switch, Router as WouterRouter, Redirect } from 'wouter';
-import { useGetMe } from '@workspace/api-client-react';
+import { useGetMe, setAuthTokenGetter } from '@workspace/api-client-react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import AppSidebar from '@/components/app-sidebar';
+import { Loader as Loader2 } from 'lucide-react';
 
 import NotFound from '@/pages/not-found';
 import Home from '@/pages/home';
@@ -18,7 +19,8 @@ import Quotes from '@/pages/quotes';
 import Catalogs from '@/pages/catalogs';
 import Reports from '@/pages/reports';
 import Sheets from '@/pages/sheets';
-import { Loader2 } from 'lucide-react';
+
+setAuthTokenGetter(() => localStorage.getItem('prosic_token'));
 
 const queryClient = new QueryClient();
 
@@ -57,16 +59,16 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
-      
-      <Route path="/dashboard" render={() => <ProtectedRoute component={Dashboard} />} />
-      <Route path="/services" render={() => <ProtectedRoute component={Services} />} />
-      <Route path="/services/:id" render={() => <ProtectedRoute component={ServiceDetail} />} />
-      <Route path="/schedule" render={() => <ProtectedRoute component={Schedule} />} />
-      <Route path="/routes" render={() => <ProtectedRoute component={RoutesPage} />} />
-      <Route path="/quotes" render={() => <ProtectedRoute component={Quotes} />} />
-      <Route path="/catalogs" render={() => <ProtectedRoute component={Catalogs} />} />
-      <Route path="/reports" render={() => <ProtectedRoute component={Reports} />} />
-      <Route path="/sheets" render={() => <ProtectedRoute component={Sheets} />} />
+
+      <Route path="/dashboard">{() => <ProtectedRoute component={Dashboard} />}</Route>
+      <Route path="/services">{() => <ProtectedRoute component={Services} />}</Route>
+      <Route path="/services/:id">{() => <ProtectedRoute component={ServiceDetail} />}</Route>
+      <Route path="/schedule">{() => <ProtectedRoute component={Schedule} />}</Route>
+      <Route path="/routes">{() => <ProtectedRoute component={RoutesPage} />}</Route>
+      <Route path="/quotes">{() => <ProtectedRoute component={Quotes} />}</Route>
+      <Route path="/catalogs">{() => <ProtectedRoute component={Catalogs} />}</Route>
+      <Route path="/reports">{() => <ProtectedRoute component={Reports} />}</Route>
+      <Route path="/sheets">{() => <ProtectedRoute component={Sheets} />}</Route>
 
       <Route component={NotFound} />
     </Switch>

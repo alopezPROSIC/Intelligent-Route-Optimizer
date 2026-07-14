@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Container, Loader2 } from 'lucide-react';
+import { Container, Loader as Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const loginSchema = z.object({
@@ -26,7 +26,8 @@ export default function Login() {
 
   const onSubmit = (values: z.infer<typeof loginSchema>) => {
     login.mutate({ data: values }, {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        localStorage.setItem('prosic_token', data.token);
         toast.success('Sesión iniciada correctamente');
         setLocation('/dashboard');
       },

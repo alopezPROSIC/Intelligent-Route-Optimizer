@@ -43,6 +43,8 @@ export function scoreIdentity(data: {
 function getStripe(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) return null;
+  // Reject placeholder / malformed keys so we return 503 instead of a downstream 500.
+  if (!/^sk_(test|live)_[A-Za-z0-9]{20,}$/.test(key)) return null;
   return new Stripe(key);
 }
 
@@ -78,10 +80,14 @@ router.post("/rentals/create-payment-intent", async (req, res) => {
   const safeSubtotal = renta * dias + flete;
   const safeIva = Math.round(safeSubtotal * 0.16 * 100) / 100;
   const safeTotal = Math.round((safeSubtotal + safeIva) * 100) / 100;
-  const finalTotal = safeTotal > 0 ? safeTotal : Number(monto_total);
+  if (safeTotal <= 0) {
+    res.status(400).json({ error: "monto_invalido", message: "El total calculado debe ser mayor a 0." });
+    return;
+  }
+  const finalTotal = safeTotal;
 
   const requires_review = Number(identity_score) < 60;
-  const folio = `RNT-${Date.now().toString(36).toUpperCase()}`;
+  const folio = `RNT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
   try {
     const paymentIntent = await stripe.paymentIntents.create({

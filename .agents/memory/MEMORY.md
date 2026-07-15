@@ -1,0 +1,1 @@
+- [Online Rental Flow](rental-flow.md) — 4-step modal (cotización→identidad→pago→confirmación), identity scoring, Stripe MXN, equipment status sync; Stripe needs ProposeIntegration

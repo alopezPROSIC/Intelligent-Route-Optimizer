@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { db, equipmentTable } from "@workspace/db";
 import { eq, ilike } from "drizzle-orm";
-import { requireAuth } from "../middlewares/requireAuth";
 
 const router = Router();
 
@@ -22,6 +21,22 @@ router.post("/equipment", async (req, res) => {
 
 router.put("/equipment/:id", async (req, res) => {
   const [eq_] = await db.update(equipmentTable).set(req.body).where(eq(equipmentTable.id, Number(req.params.id))).returning();
+  if (!eq_) { res.status(404).json({ error: "No encontrado" }); return; }
+  res.json(eq_);
+});
+
+// ─── PATCH /equipment/:id/status ─────────────────────────────────────────────
+router.patch("/equipment/:id/status", async (req, res) => {
+  const { status } = req.body;
+  const allowed = ["disponible", "rentado", "en_servicio", "en_venta"];
+  if (!allowed.includes(status)) {
+    res.status(400).json({ error: `status debe ser uno de: ${allowed.join(", ")}` });
+    return;
+  }
+  const [eq_] = await db.update(equipmentTable)
+    .set({ status })
+    .where(eq(equipmentTable.id, Number(req.params.id)))
+    .returning();
   if (!eq_) { res.status(404).json({ error: "No encontrado" }); return; }
   res.json(eq_);
 });

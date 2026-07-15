@@ -1,0 +1,38 @@
+{
+  "summary": "Backend testing of new /api/settings feature (app_settings table). Created /app/backend/tests/test_settings.py with 19 tests covering auth (401 without token, admin-only PUT/test, operaciones→403), all 5 keys returned with {configured, masked}, PUT validation for stripe_secret_key / stripe_publishable_key / google_service_account_key / google_sheets_id / invalid_key_name, POST /settings/test/{stripe,sheets} without config, sheets/test with fake credentials must not crash, and regressions (login OK, sheets/status conectado=false, create-payment-intent 503 STRIPE_NOT_CONFIGURED). Also re-ran existing test_prosic_backend.py (14 tests). Total 33/33 passed (100%).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/settings", "issue": "Any authenticated user (including OPERACIONES) can read masked settings — spec only says PUT/test require ADMIN. Not a bug, but confirmed: OPERACIONES can see which keys are configured and their masked prefix/suffix. Consider gating GET behind requireAdmin if that reveal is sensitive."},
+      {"endpoint": "PUT /api/settings/stripe_webhook_secret", "issue": "No regex validation for stripe_webhook_secret (accepts any non-empty string). Not asked in the review, just an observation for consistency with stripe_secret_key / stripe_publishable_key checks."},
+      {"endpoint": "GET /api/settings masking", "issue": "Spec text says 'primeros 6 + últimos 4', implementation uses `${v.slice(0,6)}…${v.slice(-4)}` which includes a Unicode ellipsis in the middle. Test uses startswith/endswith so it passes; if UI expects strict '6+4' contract, the ellipsis may need to be removed. Currently good UX."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_settings.py",
+    "/app/backend/tests/test_prosic_backend.py",
+    "/app/test_reports/pytest/settings_results.xml",
+    "/app/test_reports/pytest/regression_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: Restrict GET /api/settings to ADMIN/GERENCIA (currently any authenticated user can read masked view).",
+    "OPTIONAL: Add format validation for stripe_webhook_secret (e.g. starts with 'whsec_') to match other Stripe key validators."
+  ],
+  "critical_code_review_comments": [
+    "settings.ts uses in-memory cache with 5s TTL — tests had to sleep(5.2s) after DB truncate; acceptable for prod but worth noting: multi-instance deployments will each hold their own cache (up to 5s divergence after PUT).",
+    "settings.ts requireAdmin: only mutations gated. GET returns masked view but still leaks 'configured=true/false' to any authenticated user (OPERACIONES).",
+    "settings.ts POST /settings/test/sheets: correctly returns 400 with error message on invalid credentials (JWT signature errors) — verified with fake service-account JSON, endpoint does NOT crash (returns 400 with 'error' string).",
+    "lib/settings.ts getSetting() falls back to process.env[KEY.toUpperCase()] which is a nice safety net; however this means after a DELETE FROM app_settings, if env vars are set the setting is still 'configured'. In this environment env vars are empty so behavior is correct; production must ensure env vars are cleared once UI-managed settings are in use.",
+    "settings.ts PUT: uses onConflictDoUpdate → idempotent. Good.",
+    "The regex `^sk_(test|live)_[A-Za-z0-9]{20,}$` accepts 'sk_test_' + 20 alnum chars (28 total) — the review spec asked for '+30 chars', both pass. Regex is looser than spec but not stricter, so no false rejections."
+  ],
+  "updated_files": ["/app/backend/tests/test_settings.py"],
+  "success_rate": {"backend": "100% (33/33 across 2 files)", "frontend": "not tested (backend-only request)"},
+  "test_credentials": "admin@prosic.mx / prosic123 (ADMIN), operaciones@prosic.mx / prosic123 (OPERACIONES) — from /app/memory/test_credentials.md",
+  "seed_data_creation": "Tests write/delete rows in app_settings; each parametrized test truncates the table before and after. Final state: app_settings is empty (verified with DELETE).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "New test file: /app/backend/tests/test_settings.py (19 tests) + existing /app/backend/tests/test_prosic_backend.py (14 tests). Both green. All /api/settings mutations require Bearer token AND rol IN (ADMIN, GERENCIA). Cache TTL for settings is 5s in-memory in the node process — after any direct DB write (bypassing the API) you MUST sleep 5.2s before hitting GET/getSetting, otherwise stale cache is served. The settings.getSetting() also falls back to process.env[KEY_UPPER] when DB row is empty; /app/backend/.env currently has empty STRIPE_*, GOOGLE_* — do NOT populate them or the 'no_configurado' tests will start returning ok:true. Fake service account (structurally valid JSON) is accepted by PUT (only format check) and POST /settings/test/sheets returns 400 with 'invalid_grant' or JWT error — not a crash.",
+  "rca of the issue": "N/A — no bugs. Feature works end-to-end. Verified: (a) GET returns 5 keys with {configured, masked}; (b) masking format: first 6 + Unicode ellipsis + last 4 (raw value never exposed); (c) PUT validates stripe key regex (sk_/pk_ prefix + ≥20 alnum), service-account JSON structure (client_email + private_key required), and rejects unknown key names with 400 invalid_key; (d) POST /settings/test/stripe and /settings/test/sheets return {ok:false, error:'no_configurado'} when settings empty; (e) POST /settings/test/sheets with valid-format but fake credentials returns 400 with a JWT error (does not crash server); (f) OPERACIONES role gets 403 on PUT and test endpoints; (g) regressions: create-payment-intent returns 503 STRIPE_NOT_CONFIGURED, sheets/status conectado=false, login OK."
+}

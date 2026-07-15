@@ -10,18 +10,17 @@
  */
 import { google, sheets_v4 } from "googleapis";
 import { JWT } from "google-auth-library";
+import { getSetting } from "./settings";
 
 const SCOPES = ["https://www.googleapis.com/auth/spreadsheets"];
 
-let _sheets: sheets_v4.Sheets | null = null;
-let _spreadsheetId: string | null = null;
+let _sheetsCache: { sheets: sheets_v4.Sheets; spreadsheetId: string; signature: string } | null = null;
 let _lastError: string | null = null;
 
-function readServiceAccount(): Record<string, unknown> | null {
-  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+async function readServiceAccount(): Promise<Record<string, unknown> | null> {
+  const raw = (await getSetting("google_service_account_key")) ?? undefined;
   if (raw) {
     try {
-      // Support both raw JSON and base64-encoded JSON
       const decoded = raw.trim().startsWith("{")
         ? raw
         : Buffer.from(raw, "base64").toString("utf8");
@@ -45,83 +44,79 @@ function readServiceAccount(): Record<string, unknown> | null {
   return null;
 }
 
-export function getSpreadsheetId(): string | null {
-  return process.env.GOOGLE_SHEETS_ID ?? null;
+export async function getSpreadsheetId(): Promise<string | null> {
+  return (await getSetting("google_sheets_id")) ?? null;
 }
 
 export function getLastError(): string | null {
   return _lastError;
 }
 
-export function isConfigured(): boolean {
-  return !!getSpreadsheetId() && !!readServiceAccount();
+export async function isConfigured(): Promise<boolean> {
+  return !!(await getSpreadsheetId()) && !!(await readServiceAccount());
 }
 
-export async function getSheetsClient(): Promise<sheets_v4.Sheets | null> {
-  if (_sheets) return _sheets;
-  const key = readServiceAccount();
-  const spreadsheetId = getSpreadsheetId();
+export async function getSheetsClient(): Promise<{ sheets: sheets_v4.Sheets; spreadsheetId: string } | null> {
+  const key = await readServiceAccount();
+  const spreadsheetId = await getSpreadsheetId();
   if (!key || !spreadsheetId) return null;
 
+  const signature = `${spreadsheetId}::${(key.private_key_id as string) ?? ""}`;
+  if (_sheetsCache && _sheetsCache.signature === signature) {
+    return { sheets: _sheetsCache.sheets, spreadsheetId: _sheetsCache.spreadsheetId };
+  }
   const auth = new JWT({
     email: key.client_email as string,
     key: key.private_key as string,
     scopes: SCOPES,
   });
-  _sheets = google.sheets({ version: "v4", auth });
-  _spreadsheetId = spreadsheetId;
-  return _sheets;
+  const sheets = google.sheets({ version: "v4", auth });
+  _sheetsCache = { sheets, spreadsheetId, signature };
+  _lastError = null;
+  return { sheets, spreadsheetId };
 }
 
 export async function listSheetTabs(): Promise<string[]> {
-  const sheets = await getSheetsClient();
-  if (!sheets || !_spreadsheetId) return [];
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: _spreadsheetId });
+  const c = await getSheetsClient();
+  if (!c) return [];
+  const meta = await c.sheets.spreadsheets.get({ spreadsheetId: c.spreadsheetId });
   return (meta.data.sheets ?? [])
     .map((s) => s.properties?.title)
     .filter((t): t is string => !!t);
 }
 
 export async function getSpreadsheetName(): Promise<string | null> {
-  const sheets = await getSheetsClient();
-  if (!sheets || !_spreadsheetId) return null;
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: _spreadsheetId, fields: "properties(title)" });
+  const c = await getSheetsClient();
+  if (!c) return null;
+  const meta = await c.sheets.spreadsheets.get({ spreadsheetId: c.spreadsheetId, fields: "properties(title)" });
   return meta.data.properties?.title ?? null;
 }
 
 export async function readSheet(sheetName: string, range?: string): Promise<any[][]> {
-  const sheets = await getSheetsClient();
-  if (!sheets || !_spreadsheetId) throw new Error("Google Sheets no configurado");
+  const c = await getSheetsClient();
+  if (!c) throw new Error("Google Sheets no configurado");
   const r = range ?? `${sheetName}!A:ZZ`;
-  const resp = await sheets.spreadsheets.values.get({
-    spreadsheetId: _spreadsheetId,
-    range: r,
-  });
+  const resp = await c.sheets.spreadsheets.values.get({ spreadsheetId: c.spreadsheetId, range: r });
   return resp.data.values ?? [];
 }
 
-/** Overwrite the entire tab starting at A1 with `rows`. Sheet is cleared first. */
 export async function writeSheet(sheetName: string, rows: any[][]): Promise<number> {
-  const sheets = await getSheetsClient();
-  if (!sheets || !_spreadsheetId) throw new Error("Google Sheets no configurado");
+  const c = await getSheetsClient();
+  if (!c) throw new Error("Google Sheets no configurado");
 
-  // Ensure the tab exists (create if not)
   const existing = await listSheetTabs();
   if (!existing.includes(sheetName)) {
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: _spreadsheetId,
-      requestBody: {
-        requests: [{ addSheet: { properties: { title: sheetName } } }],
-      },
+    await c.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: c.spreadsheetId,
+      requestBody: { requests: [{ addSheet: { properties: { title: sheetName } } }] },
     });
   }
-
-  await sheets.spreadsheets.values.clear({
-    spreadsheetId: _spreadsheetId,
+  await c.sheets.spreadsheets.values.clear({
+    spreadsheetId: c.spreadsheetId,
     range: `${sheetName}!A:ZZ`,
   });
-  const resp = await sheets.spreadsheets.values.update({
-    spreadsheetId: _spreadsheetId,
+  const resp = await c.sheets.spreadsheets.values.update({
+    spreadsheetId: c.spreadsheetId,
     range: `${sheetName}!A1`,
     valueInputOption: "RAW",
     requestBody: { values: rows },

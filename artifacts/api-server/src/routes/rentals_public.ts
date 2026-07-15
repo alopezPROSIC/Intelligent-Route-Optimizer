@@ -40,8 +40,10 @@ export function scoreIdentity(data: {
   return { score, detalles: d, aprobado: score >= 60 };
 }
 
-function getStripe(): Stripe | null {
-  const key = process.env.STRIPE_SECRET_KEY;
+import { getSetting } from "../lib/settings";
+
+async function getStripe(): Promise<Stripe | null> {
+  const key = (await getSetting("stripe_secret_key")) ?? undefined;
   if (!key) return null;
   // Reject placeholder / malformed keys so we return 503 instead of a downstream 500.
   if (!/^sk_(test|live)_[A-Za-z0-9]{20,}$/.test(key)) return null;
@@ -56,7 +58,7 @@ router.post("/rentals/validate-identity", (req, res) => {
 
 // ─── POST /rentals/create-payment-intent ──────────────────────────────────────
 router.post("/rentals/create-payment-intent", async (req, res) => {
-  const stripe = getStripe();
+  const stripe = await getStripe();
   if (!stripe) {
     res.status(503).json({ error: "STRIPE_NOT_CONFIGURED" });
     return;
@@ -155,7 +157,7 @@ router.post("/rentals/create-payment-intent", async (req, res) => {
 // ─── GET /rentals/payment-status/:paymentIntentId ─────────────────────────────
 // Polling endpoint used by the frontend after redirect from Stripe Elements.
 router.get("/rentals/payment-status/:paymentIntentId", async (req, res) => {
-  const stripe = getStripe();
+  const stripe = await getStripe();
   const pid = req.params.paymentIntentId;
   const [txn] = await db.select().from(paymentTransactionsTable).where(eq(paymentTransactionsTable.payment_intent_id, pid));
   if (!txn) { res.status(404).json({ error: "Transaction not found" }); return; }
@@ -225,7 +227,7 @@ async function confirmRentalFromPayment(txnId: number, paymentIntentId: string, 
 router.post("/rentals/confirm/:rentalId", async (req, res) => {
   const rentalId = Number(req.params.rentalId);
   const { payment_intent_id } = req.body;
-  const stripe = getStripe();
+  const stripe = await getStripe();
 
   if (stripe && payment_intent_id) {
     try {
@@ -253,11 +255,11 @@ stripeWebhookRouter.post(
   "/webhook/stripe",
   express.raw({ type: "application/json" }),
   async (req, res) => {
-    const stripe = getStripe();
+    const stripe = await getStripe();
     if (!stripe) { res.status(503).json({ error: "STRIPE_NOT_CONFIGURED" }); return; }
 
     const sig = req.headers["stripe-signature"] as string | undefined;
-    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    const secret = (await getSetting("stripe_webhook_secret")) ?? undefined;
     let event: Stripe.Event;
     try {
       if (secret && sig) {

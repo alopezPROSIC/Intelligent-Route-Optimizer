@@ -25,6 +25,7 @@ import {
   Container,
   ClipboardList,
   ShieldAlert,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -49,6 +50,7 @@ export default function AppSidebar({ user }: { user: User }) {
     { label: 'Catálogos', icon: Database, path: '/catalogs' },
     { label: 'Reportes', icon: BarChart2, path: '/reports' },
     { label: 'Sync Sheets', icon: FileSpreadsheet, path: '/sheets' },
+    { label: 'Ajustes', icon: SettingsIcon, path: '/settings' },
   ];
 
   return (

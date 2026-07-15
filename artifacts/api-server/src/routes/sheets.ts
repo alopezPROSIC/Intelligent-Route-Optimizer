@@ -25,8 +25,8 @@ const router = Router();
 
 // GET /api/sheets/status -----------------------------------------------------
 router.get("/sheets/status", async (_req, res) => {
-  const spreadsheetId = getSpreadsheetId();
-  const configured = isConfigured();
+  const spreadsheetId = await getSpreadsheetId();
+  const configured = await isConfigured();
   let hojas: string[] = [];
   let spreadsheet_name: string | null = null;
   let last_error: string | null = getLastError();
@@ -142,7 +142,7 @@ router.post("/sheets/sync", async (req, res) => {
   const { direction = "bidirectional", sheets: onlySheets } = req.body ?? {};
   const user = (req as any).user?.nombre ?? "sistema";
 
-  if (!isConfigured()) {
+  if (!(await isConfigured())) {
     const msg = getLastError() ?? "GOOGLE_SHEETS_ID o GOOGLE_SERVICE_ACCOUNT_KEY no configurados.";
     await db.insert(sheetsSyncLogTable).values({
       direction,
@@ -248,7 +248,7 @@ router.post("/sheets/import", async (req, res) => {
   const { hoja = "REPORTE", desde_fila = 2, sobrescribir = false } = req.body ?? {};
   const user = (req as any).user?.nombre ?? "sistema";
 
-  if (!isConfigured()) {
+  if (!(await isConfigured())) {
     res.status(400).json({
       success: false,
       total_filas: 0,

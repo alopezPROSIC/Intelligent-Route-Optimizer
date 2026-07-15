@@ -21,6 +21,7 @@ import Reports from '@/pages/reports';
 import Sheets from '@/pages/sheets';
 import Rentals from '@/pages/rentals';
 import Reviews from '@/pages/reviews';
+import Settings from '@/pages/settings';
 
 setAuthTokenGetter(() => localStorage.getItem('prosic_token'));
 
@@ -73,6 +74,7 @@ function Router() {
       <Route path="/sheets">{() => <ProtectedRoute component={Sheets} />}</Route>
       <Route path="/rentals">{() => <ProtectedRoute component={Rentals} />}</Route>
       <Route path="/reviews">{() => <ProtectedRoute component={Reviews} />}</Route>
+      <Route path="/settings">{() => <ProtectedRoute component={Settings} />}</Route>
 
       <Route component={NotFound} />
     </Switch>

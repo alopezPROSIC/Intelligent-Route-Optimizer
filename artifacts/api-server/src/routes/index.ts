@@ -14,6 +14,7 @@ import routesOptimizationRouter from "./routes_optimization";
 import reportsRouter from "./reports";
 import sheetsRouter from "./sheets";
 import rentalsRouter from "./rentals";
+import settingsRouter from "./settings";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -37,5 +38,6 @@ router.use(routesOptimizationRouter);
 router.use(reportsRouter);
 router.use(sheetsRouter);
 router.use(rentalsRouter);         // GET /rentals, review management
+router.use(settingsRouter);
 
 export default router;

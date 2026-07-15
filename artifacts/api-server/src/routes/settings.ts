@@ -15,8 +15,8 @@ function requireAdmin(req: any, res: any, next: any) {
   next();
 }
 
-// GET /api/settings  – masked view of every setting
-router.get("/settings", async (_req, res) => {
+// GET /api/settings  – masked view of every setting (admin/gerencia only)
+router.get("/settings", requireAdmin, async (_req, res) => {
   const all = await getAllSettings();
   res.json(all);
 });
@@ -38,6 +38,10 @@ router.put("/settings/:key", requireAdmin, async (req, res) => {
   }
   if (key === "stripe_publishable_key" && value && !/^pk_(test|live)_[A-Za-z0-9]{20,}$/.test(value)) {
     res.status(400).json({ error: "stripe_pk_invalido", message: "Debe comenzar con pk_test_ o pk_live_." });
+    return;
+  }
+  if (key === "stripe_webhook_secret" && value && !/^whsec_[A-Za-z0-9]{20,}$/.test(value)) {
+    res.status(400).json({ error: "stripe_whsec_invalido", message: "Debe comenzar con whsec_ y tener al menos 26 caracteres." });
     return;
   }
   if (key === "google_service_account_key" && value) {

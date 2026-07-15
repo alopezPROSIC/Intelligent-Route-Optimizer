@@ -54,12 +54,13 @@ interface ScheduleDialogProps {
   service: Service;
   drivers: { id: number; nombre: string; activo?: boolean }[];
   vehicles: { id: number; placa: string; tipo_vehiculo: string; disponible?: boolean }[];
+  allServices: Service[];
   targetDate: Date;
   onClose: () => void;
   onSaved: () => void;
 }
 
-function ScheduleDialog({ service, drivers, vehicles, targetDate, onClose, onSaved }: ScheduleDialogProps) {
+function ScheduleDialog({ service, drivers, vehicles, allServices, targetDate, onClose, onSaved }: ScheduleDialogProps) {
   const update = useUpdateService();
   const [date, setDate] = useState(
     service.fecha_programacion
@@ -69,6 +70,26 @@ function ScheduleDialog({ service, drivers, vehicles, targetDate, onClose, onSav
   const [hora, setHora] = useState(service.hora_programada ?? '');
   const [driverId, setDriverId] = useState(service.conductor_id?.toString() ?? '');
   const [vehicleId, setVehicleId] = useState(service.vehiculo_id?.toString() ?? '');
+
+  // ── Conflict detection ────────────────────────────────────────────────────────
+  const conflicts = useMemo(() => {
+    if (!date) return { driver: [] as Service[], vehicle: [] as Service[] };
+    const sameDay = allServices.filter(s => {
+      if (s.id === service.id) return false;
+      const fp = s.fecha_programacion;
+      if (!fp) return false;
+      const d = typeof fp === 'string' ? fp.slice(0, 10) : format(fp as Date, 'yyyy-MM-dd');
+      return d === date;
+    });
+    const dId = driverId && driverId !== 'none' ? parseInt(driverId) : null;
+    const vId = vehicleId && vehicleId !== 'none' ? parseInt(vehicleId) : null;
+    return {
+      driver:  dId ? sameDay.filter(s => s.conductor_id === dId) : [],
+      vehicle: vId ? sameDay.filter(s => s.vehiculo_id === vId) : [],
+    };
+  }, [date, driverId, vehicleId, allServices, service.id]);
+
+  const hasConflict = conflicts.driver.length > 0 || conflicts.vehicle.length > 0;
 
   const handleSave = () => {
     const payload: Record<string, unknown> = {};
@@ -124,41 +145,85 @@ function ScheduleDialog({ service, drivers, vehicles, targetDate, onClose, onSav
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
           <User className="h-3 w-3" /> Conductor
+          {conflicts.driver.length > 0 && (
+            <span className="ml-auto text-[10px] font-bold text-amber-600 flex items-center gap-0.5">
+              <AlertCircle className="h-2.5 w-2.5" /> {conflicts.driver.length} conflicto(s)
+            </span>
+          )}
         </Label>
         <Select value={driverId} onValueChange={setDriverId}>
-          <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
+          <SelectTrigger className={cn(conflicts.driver.length > 0 && 'border-amber-400 ring-1 ring-amber-300')}>
+            <SelectValue placeholder="Sin asignar" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="none">Sin asignar</SelectItem>
-            {drivers.filter(d => d.activo !== false).map(d => (
-              <SelectItem key={d.id} value={d.id.toString()}>{d.nombre}</SelectItem>
-            ))}
+            {drivers.filter(d => d.activo !== false).map(d => {
+              const conflict = date ? allServices.some(s =>
+                s.id !== service.id && s.conductor_id === d.id &&
+                (s.fecha_programacion ? (typeof s.fecha_programacion === 'string' ? s.fecha_programacion.slice(0,10) : format(s.fecha_programacion as Date,'yyyy-MM-dd')) : null) === date
+              ) : false;
+              return (
+                <SelectItem key={d.id} value={d.id.toString()}>
+                  {conflict ? '⚠️ ' : ''}{d.nombre}{conflict ? ' (ocupado)' : ''}
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
+        {conflicts.driver.length > 0 && (
+          <p className="text-[10px] text-amber-600">
+            Ya asignado a: {conflicts.driver.map(s => s.cliente ?? `#${s.id}`).join(', ')}
+          </p>
+        )}
       </div>
 
       <div className="space-y-1.5">
         <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
           <Truck className="h-3 w-3" /> Vehículo
+          {conflicts.vehicle.length > 0 && (
+            <span className="ml-auto text-[10px] font-bold text-amber-600 flex items-center gap-0.5">
+              <AlertCircle className="h-2.5 w-2.5" /> {conflicts.vehicle.length} conflicto(s)
+            </span>
+          )}
         </Label>
         <Select value={vehicleId} onValueChange={setVehicleId}>
-          <SelectTrigger><SelectValue placeholder="Sin asignar" /></SelectTrigger>
+          <SelectTrigger className={cn(conflicts.vehicle.length > 0 && 'border-amber-400 ring-1 ring-amber-300')}>
+            <SelectValue placeholder="Sin asignar" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="none">Sin asignar</SelectItem>
-            {vehicles.map(v => (
-              <SelectItem key={v.id} value={v.id.toString()}>
-                {v.placa} — {v.tipo_vehiculo}
-                {v.disponible === false && ' (ocupado)'}
-              </SelectItem>
-            ))}
+            {vehicles.map(v => {
+              const conflict = date ? allServices.some(s =>
+                s.id !== service.id && s.vehiculo_id === v.id &&
+                (s.fecha_programacion ? (typeof s.fecha_programacion === 'string' ? s.fecha_programacion.slice(0,10) : format(s.fecha_programacion as Date,'yyyy-MM-dd')) : null) === date
+              ) : false;
+              return (
+                <SelectItem key={v.id} value={v.id.toString()}>
+                  {conflict ? '⚠️ ' : ''}{v.placa} — {v.tipo_vehiculo}{conflict ? ' (en uso)' : ''}
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
+        {conflicts.vehicle.length > 0 && (
+          <p className="text-[10px] text-amber-600">
+            Ya asignado a: {conflicts.vehicle.map(s => s.cliente ?? `#${s.id}`).join(', ')}
+          </p>
+        )}
       </div>
+
+      {hasConflict && (
+        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+          <span>Hay conflictos de asignación. Puedes continuar, pero el recurso tendrá múltiples servicios ese día.</span>
+        </div>
+      )}
 
       <div className="flex gap-2 pt-1">
         <Button variant="outline" className="flex-1" onClick={onClose}>Cancelar</Button>
-        <Button className="flex-1" onClick={handleSave} disabled={update.isPending}>
+        <Button className={cn('flex-1', hasConflict && 'bg-amber-500 hover:bg-amber-600')} onClick={handleSave} disabled={update.isPending}>
           {update.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Guardar
+          {hasConflict ? 'Guardar con conflicto' : 'Guardar'}
         </Button>
       </div>
     </DialogContent>
@@ -591,6 +656,7 @@ export default function Schedule() {
             service={selectedService}
             drivers={drivers}
             vehicles={vehicles}
+            allServices={allWeekServices}
             targetDate={selectedDate}
             onClose={() => setSelectedService(null)}
             onSaved={refetch}

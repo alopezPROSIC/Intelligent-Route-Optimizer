@@ -22,7 +22,9 @@ import {
   BarChart2, 
   FileSpreadsheet, 
   LogOut,
-  Container
+  Container,
+  ClipboardList,
+  ShieldAlert,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -42,6 +44,8 @@ export default function AppSidebar({ user }: { user: User }) {
     { label: 'Programación', icon: Calendar, path: '/schedule' },
     { label: 'Optimización', icon: Map, path: '/routes' },
     { label: 'Cotizaciones', icon: FileText, path: '/quotes' },
+    { label: 'Rentas en Línea', icon: ClipboardList, path: '/rentals' },
+    { label: 'Revisiones', icon: ShieldAlert, path: '/reviews' },
     { label: 'Catálogos', icon: Database, path: '/catalogs' },
     { label: 'Reportes', icon: BarChart2, path: '/reports' },
     { label: 'Sync Sheets', icon: FileSpreadsheet, path: '/sheets' },

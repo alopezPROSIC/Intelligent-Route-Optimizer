@@ -4,7 +4,8 @@
     "servicio": "SRV-",
     "conductor": "COND-",
     "equipo": "EQ-",
-    "vehiculo": "VEH-"
+    "vehiculo": "VEH-",
+    "cliente": "CLI-"
   },
   "sheets": {
     "servicios": {

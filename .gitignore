@@ -48,3 +48,9 @@ Thumbs.db
 .cache/
 .local/
 .env
+.env.*
+*.env
+credentials.json
+*.pem
+*.key
+.credentials

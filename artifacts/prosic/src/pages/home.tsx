@@ -105,7 +105,7 @@ export default function Home() {
   const [showCotizador, setShowCotizador] = useState(false);
   const [cotizadorEquipo, setCotizadorEquipo] = useState<{ modelo: string; tipo: string | null } | null>(null);
 
-  const [equipmentData, setEquipmentData] = useState<{ id: number; id_equipo: string; modelo: string; tipo: string | null; disponible: boolean }[]>([]);
+  const [equipmentData, setEquipmentData] = useState<{ id: number; id_equipo: string; modelo: string; tipo: string | null; status: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

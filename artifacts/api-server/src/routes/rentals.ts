@@ -17,7 +17,10 @@ router.get("/rentals/reviews", async (_req, res) => {
 });
 
 router.patch("/rentals/reviews/:id", async (req, res) => {
-  const { estatus, notas, revisor } = req.body;
+  // Accept either {accion: 'aprobar'|'rechazar'} or {estatus: 'aprobado'|'rechazado'}
+  const { accion, estatus: rawEstatus, notas, revisor } = req.body;
+  const estatus = rawEstatus ?? (accion === "aprobar" ? "aprobado" : accion === "rechazar" ? "rechazado" : undefined);
+  if (!estatus) { res.status(400).json({ error: "accion o estatus requerido" }); return; }
   const [row] = await db.update(reviewRequestsTable)
     .set({ estatus, notas, revisor, resolved_at: new Date() })
     .where(eq(reviewRequestsTable.id, Number(req.params.id)))
@@ -33,9 +36,11 @@ router.patch("/rentals/:id/status", async (req, res) => {
     .returning();
   if (!rental) { res.status(404).json({ error: "No encontrado" }); return; }
 
+  // Sync equipment status when rental lifecycle changes
   if (rental.equipo_serie) {
     const equipStatus =
-      estatus === "activo"     ? "rentado"    :
+      estatus === "en_renta"   ? "rentado"    :
+      estatus === "pagado"     ? "rentado"    :
       estatus === "completado" ? "disponible" :
       estatus === "cancelado"  ? "disponible" : undefined;
     if (equipStatus) {

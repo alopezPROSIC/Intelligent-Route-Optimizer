@@ -1,0 +1,40 @@
+{
+  "summary": "Backend regression testing for PROSIC (Express+FastAPI proxy). Executed 14 pytest tests covering auth, Google Sheets (unconfigured), rentals public (identity + Stripe placeholder), quotes/postal-zones, and equipment public catalog. All 14 tests passed (100%). Stripe placeholder returns 500 with clear 'Invalid API Key' message (acceptable per request). Sheets endpoints correctly return 400 when GOOGLE_SHEETS_ID/GOOGLE_SERVICE_ACCOUNT_KEY are missing.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/equipment/public", "issue": "Endpoint mentioned in review request does not exist. Actual public catalog route is /api/equipment/catalog (see routes/equipment_public.ts). /api/equipment is protected (401 without token). Only doc mismatch — code behavior is correct."},
+      {"endpoint": "/api/rentals/create-payment-intent", "issue": "Returns 500 (not 503) with 'Invalid API Key' because STRIPE_SECRET_KEY='sk_test_emergent' passes the truthy check in getStripe(). Consider validating key format (sk_test_/sk_live_) and short-circuiting to 503 STRIPE_NOT_CONFIGURED for consistency. Acceptable per request but worth hardening."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_prosic_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: In rentals_public.ts getStripe(), reject placeholder keys (e.g. reject when key === 'sk_test_emergent' or doesn't match /^sk_(test|live)_[A-Za-z0-9]{20,}$/) so unconfigured Stripe returns 503 instead of a downstream 500 from the SDK.",
+    "OPTIONAL: Add explicit public route /api/equipment/public (or update docs/tests) so the storefront catalog endpoint is discoverable — current name is /api/equipment/catalog."
+  ],
+  "critical_code_review_comments": [
+    "server.py wrapper: node subprocess is spawned in FastAPI lifespan, which fights supervisor semantics. If uvicorn reloads or receives multiple workers, multiple node processes could bind :5000. OK for single-worker preview but flag it.",
+    "sheets.ts /sheets/sync export loop swallows individual tab errors but still writes a 'partial' log — good; however when isConfigured() is false and there are no credentials the sync insert of sheetsSyncLogTable happens unconditionally: fine for audit.",
+    "rentals_public.ts recomputes totals server-side (good, anti-tamper) but falls back to Number(monto_total) when safeTotal <= 0 — a malicious payload with dias_renta=0/costo_renta=0 could still inject an arbitrary monto_total. Recommend rejecting when safeTotal <= 0.",
+    "quotes.ts uses Date.now() for folio: potential collision under high concurrency. Consider adding random suffix or DB-generated sequence.",
+    "auth.ts uses in-code createSession/verifyPassword; ensure JWT_SECRET is rotated in prod (currently 'prosic_dev_secret_change_me' in .env)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_prosic_backend.py"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "not tested (backend-only request)"},
+  "test_credentials": "admin@prosic.mx / prosic123 (ADMIN) — from /app/memory/test_credentials.md",
+  "seed_data_creation": "None. Tests create idempotent quote rows (folio COT-<timestamp>) and a sheets_sync_log 'error' row per sync/import failure call. No cleanup performed; considered log-audit rows and are safe to keep.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Base URL: http://127.0.0.1:8001 (FastAPI proxy on :8001 → node Express on :5000). No REACT_APP_BACKEND_URL in frontend/.env — the frontend uses VITE_API_URL=/api. Sheets routes are UNDER auth middleware (requireAuth), so they need Bearer token; the pytest fixture auth_headers handles this. Stripe placeholder key 'sk_test_emergent' triggers a real Stripe SDK call which returns 500 'Invalid API Key' (not 503). Public catalog endpoint is /api/equipment/catalog (NOT /public). All 14 tests in /app/backend/tests/test_prosic_backend.py green.",
+  "rca of the issue": "N/A — no bugs blocking flow. Two minor RCA notes: (1) getStripe() in rentals_public.ts only checks `if (!key) return null`, so any non-empty placeholder is treated as configured and the Stripe SDK throws → 500. Mitigation: validate key regex. (2) Review request referenced /api/equipment/public which doesn't exist in code; the actual public route is /api/equipment/catalog."
+}

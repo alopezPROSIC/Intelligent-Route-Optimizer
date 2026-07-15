@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import { stripeWebhookRouter } from "./routes/rentals_public";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -26,6 +27,10 @@ app.use(
   }),
 );
 app.use(cors());
+
+// Stripe webhook needs raw body — mount BEFORE express.json()
+app.use("/api", stripeWebhookRouter);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

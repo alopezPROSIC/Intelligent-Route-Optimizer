@@ -9,6 +9,7 @@ export const equipmentTable = pgTable("equipment", {
   serie: text("serie").notNull().unique(),
   tipo: text("tipo"),
   disponible: boolean("disponible").notNull().default(true),
+  status: text("status").notNull().default("disponible"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 

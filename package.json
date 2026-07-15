@@ -12,10 +12,18 @@
     "@replit/connectors-sdk": "^0.4.1"
   },
   "devDependencies": {
+    "@esbuild/linux-arm64": "0.28.1",
+    "@rollup/rollup-linux-arm64-gnu": "^4.62.2",
+    "@tailwindcss/oxide-linux-arm64-gnu": "^4.3.2",
+    "esbuild": "0.28.1",
+    "lightningcss-linux-arm64-gnu": "^1.32.0",
     "prettier": "^3.9.5",
     "typescript": "~5.9.3"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "@esbuild/linux-x64"]
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "@esbuild/linux-x64"
+    ]
   }
 }

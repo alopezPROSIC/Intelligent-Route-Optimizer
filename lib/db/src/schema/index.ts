@@ -9,3 +9,5 @@ export * from "./quotes";
 export * from "./postal_zones";
 export * from "./activity_log";
 export * from "./rentals";
+export * from "./payment_transactions";
+export * from "./sheets_sync_log";

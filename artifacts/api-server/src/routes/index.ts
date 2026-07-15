@@ -15,6 +15,7 @@ import reportsRouter from "./reports";
 import sheetsRouter from "./sheets";
 import rentalsRouter from "./rentals";
 import settingsRouter from "./settings";
+import schemaRouter, { schemaPublicRouter } from "./schema";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
@@ -25,6 +26,7 @@ router.use(authRouter);
 router.use(quotesRouter);
 router.use(equipmentPublicRouter);
 router.use(rentalsPublicRouter);   // validate-identity, create-payment-intent, confirm
+router.use(schemaPublicRouter);    // GET /schema, GET /schema/:sheet (public contract)
 
 // ─── PROTECTED routes ──────────────────────────────────────────────────────────
 router.use(requireAuth as any);
@@ -39,5 +41,6 @@ router.use(reportsRouter);
 router.use(sheetsRouter);
 router.use(rentalsRouter);         // GET /rentals, review management
 router.use(settingsRouter);
+router.use(schemaRouter);          // POST /schema/import, /schema/normalize, etc.
 
 export default router;

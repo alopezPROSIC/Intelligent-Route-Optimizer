@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm } from "node:fs/promises";
+import { rm, mkdir, copyFile } from "node:fs/promises";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
@@ -118,6 +118,13 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+
+  // Copy static assets (schema.json etc.) into dist so runtime can read them
+  await mkdir(path.resolve(distDir, "schema"), { recursive: true });
+  await copyFile(
+    path.resolve(artifactDir, "src/schema/schema.json"),
+    path.resolve(distDir, "schema/schema.json"),
+  );
 }
 
 buildAll().catch((err) => {

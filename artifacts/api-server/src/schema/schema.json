@@ -1,0 +1,144 @@
+{
+  "version": "1.0",
+  "id_prefixes": {
+    "servicio": "SRV-",
+    "conductor": "COND-",
+    "equipo": "EQ-",
+    "vehiculo": "VEH-"
+  },
+  "sheets": {
+    "servicios": {
+      "description": "Registro principal de servicios logísticos",
+      "primaryKey": "id_servicio",
+      "db_table": "services",
+      "columns": [
+        { "name": "id_servicio", "type": "string", "required": true, "generated": true, "id_prefix": "servicio" },
+        { "name": "fecha_solicitud", "type": "date", "required": true },
+        { "name": "fecha_programacion", "type": "date" },
+        { "name": "horario", "type": "time" },
+        { "name": "sucursal_salida", "type": "string" },
+        { "name": "sucursal_vendedor", "type": "string" },
+        { "name": "vendedor", "type": "string" },
+        { "name": "operacion", "type": "string", "enum": ["E", "R", "CF", "RU"] },
+        { "name": "pedido", "type": "string", "required": true },
+        { "name": "remision", "type": "string" },
+        { "name": "cliente", "type": "string" },
+        { "name": "obra", "type": "string" },
+        { "name": "direccion", "type": "string" },
+        { "name": "latitud", "type": "number" },
+        { "name": "longitud", "type": "number" },
+        { "name": "id_equipo", "type": "string", "foreignKey": "equipos.id_equipo" },
+        { "name": "modelo", "type": "string" },
+        { "name": "serie", "type": "string" },
+        { "name": "dias_renta", "type": "integer" },
+        { "name": "dias_pend_fact", "type": "integer" },
+        { "name": "costo_remision", "type": "number" },
+        { "name": "costo_tabulador", "type": "number" },
+        { "name": "costo_flete_ext", "type": "number" },
+        { "name": "diferencia", "type": "number" },
+        { "name": "factura", "type": "string" },
+        { "name": "fecha_entrega", "type": "date" },
+        { "name": "id_conductor", "type": "string", "foreignKey": "conductores_proveedores.id_conductor" },
+        { "name": "conductor", "type": "string" },
+        { "name": "hora_programada", "type": "time" },
+        { "name": "hora_reprogramada", "type": "time" },
+        { "name": "carta_porte", "type": "boolean" },
+        { "name": "correo_prog", "type": "boolean", "db_field": "correo_programacion" },
+        { "name": "correo_conf", "type": "boolean", "db_field": "correo_confirmacion" },
+        { "name": "evidencia", "type": "boolean" },
+        { "name": "contacto_nombre", "type": "string" },
+        { "name": "contacto_telefono", "type": "string" },
+        { "name": "estatus", "type": "string", "enum": ["PENDIENTE", "PROGRAMADO", "EN_TRANSITO", "ENTREGADO", "CANCELADO", "TERMINADO"] },
+        { "name": "comentarios_op", "type": "string" },
+        { "name": "comentarios_traf", "type": "string" },
+        { "name": "dias_pend_rec", "type": "number" },
+        { "name": "horas_retraso", "type": "number" },
+        { "name": "retraso_total", "type": "number" },
+        { "name": "tipo_servicio", "type": "string", "enum": ["LOCAL", "FORÁNEO", "FORANEO"] },
+        { "name": "kms_recorridos", "type": "number" },
+        { "name": "dias_retraso", "type": "integer" },
+        { "name": "transporte", "type": "string" }
+      ]
+    },
+    "conductores_proveedores": {
+      "description": "Catálogo de conductores propios, externos y tercerizados",
+      "primaryKey": "id_conductor",
+      "db_table": "drivers",
+      "unique_by": ["nombre"],
+      "columns": [
+        { "name": "id_conductor", "type": "string", "generated": true, "id_prefix": "conductor" },
+        { "name": "nombre", "type": "string", "required": true },
+        { "name": "tipo", "type": "string", "enum": ["PROPIO", "EXTERNO", "TERCERIZADO"] },
+        { "name": "activo", "type": "boolean", "default": true }
+      ]
+    },
+    "equipos": {
+      "description": "Catálogo de equipos rentables",
+      "primaryKey": "id_equipo",
+      "db_table": "equipment",
+      "unique_by": ["serie"],
+      "columns": [
+        { "name": "id_equipo", "type": "string", "generated": true, "id_prefix": "equipo" },
+        { "name": "modelo", "type": "string", "required": true },
+        { "name": "serie", "type": "string", "required": true },
+        { "name": "tipo", "type": "string" },
+        { "name": "status", "type": "string", "enum": ["disponible", "rentado", "mantenimiento", "baja"], "default": "disponible" }
+      ]
+    },
+    "vehiculos": {
+      "description": "Flota de vehículos",
+      "primaryKey": "id_vehiculo",
+      "db_table": "vehicles",
+      "unique_by": ["placa"],
+      "columns": [
+        { "name": "id_vehiculo", "type": "string", "generated": true, "id_prefix": "vehiculo" },
+        { "name": "placa", "type": "string", "required": true },
+        { "name": "capacidad", "type": "number" },
+        { "name": "ubicacion", "type": "string" },
+        { "name": "conductor_asignado", "type": "string" },
+        { "name": "tipo_vehiculo", "type": "string" },
+        { "name": "disponible", "type": "boolean", "default": true }
+      ]
+    },
+    "clientes": {
+      "description": "Catálogo de clientes",
+      "primaryKey": "id_cliente",
+      "db_table": "clients",
+      "unique_by": ["cliente", "obra"],
+      "columns": [
+        { "name": "id_cliente", "type": "string", "generated": true, "id_prefix": "cliente" },
+        { "name": "cliente", "type": "string", "required": true },
+        { "name": "obra", "type": "string", "required": true },
+        { "name": "calificacion", "type": "string" },
+        { "name": "comentarios_operaciones", "type": "string" }
+      ]
+    }
+  },
+  "relations": {
+    "servicios.id_equipo": { "references": "equipos.id_equipo" },
+    "servicios.id_conductor": { "references": "conductores_proveedores.id_conductor" }
+  },
+  "normalization_rules": {
+    "conductor": {
+      "source": "REPORTE.CONDUCTOR",
+      "target_sheet": "conductores_proveedores",
+      "clean": {
+        "split_on": ["//", "/"],
+        "strip_chars": ["*", " "],
+        "trim": true,
+        "uppercase": false
+      }
+    },
+    "equipo": {
+      "source": ["REPORTE.MODELO", "REPORTE.SERIE"],
+      "target_sheet": "equipos",
+      "clean": { "trim": true }
+    },
+    "numeric_cleanup": {
+      "strip_chars": ["$", ",", " "],
+      "applies_to_types": ["number", "integer"]
+    },
+    "boolean_truthy": ["1", "true", "verdadero", "si", "sí", "yes", "y", "✓", "x"],
+    "date_formats": ["yyyy-MM-dd", "dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd'T'HH:mm:ss"]
+  }
+}

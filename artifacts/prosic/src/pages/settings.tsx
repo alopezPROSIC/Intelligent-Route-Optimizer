@@ -18,6 +18,11 @@ import {
   Zap,
   Copy,
   ExternalLink,
+  Database,
+  Download,
+  Upload,
+  Wand2,
+  FileJson,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -376,6 +381,240 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* SCHEMA CONTRACT ────────────────────────────────────────────────────── */}
+      <SchemaContractCard sheetsConfigured={s('google_sheets_id').configured && s('google_service_account_key').configured} />
     </div>
+  );
+}
+
+// ─── Schema contract sub-panel ──────────────────────────────────────────────
+interface SchemaSheet {
+  primaryKey: string;
+  db_table?: string;
+  description?: string;
+  columns: { name: string; type: string; required?: boolean; enum?: string[]; foreignKey?: string; generated?: boolean }[];
+}
+
+interface SchemaContract {
+  version: string;
+  id_prefixes: Record<string, string>;
+  sheets: Record<string, SchemaSheet>;
+}
+
+function SchemaContractCard({ sheetsConfigured }: { sheetsConfigured: boolean }) {
+  const [schema, setSchema] = useState<SchemaContract | null>(null);
+  const [selectedSheet, setSelectedSheet] = useState<string>('servicios');
+  const [validating, setValidating] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [normalizing, setNormalizing] = useState(false);
+  const [importingAll, setImportingAll] = useState(false);
+  const [result, setResult] = useState<any>(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/schema`)
+      .then((r) => r.json())
+      .then((d) => setSchema(d))
+      .catch(() => {});
+  }, []);
+
+  const call = async (path: string, body?: any) => {
+    const r = await fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return r.json();
+  };
+
+  const runValidate = async () => {
+    setValidating(true);
+    setResult(null);
+    try {
+      const data = await call('/api/schema/validate', { hoja: selectedSheet, sample_size: 500 });
+      setResult({ action: 'validate', data });
+      if (data.con_errores) toast.warning(`${data.con_errores} filas con errores de ${data.total}`);
+      else toast.success(`${data.validas} filas válidas`);
+    } finally { setValidating(false); }
+  };
+
+  const runImport = async () => {
+    setImporting(true);
+    setResult(null);
+    try {
+      const data = await call('/api/schema/import', { hoja: selectedSheet });
+      setResult({ action: 'import', data });
+      if (data.success) toast.success(`Importados: ${data.insertados} nuevos, ${data.actualizados} actualizados`);
+      else toast.error(data.message ?? `Con errores: ${data.errores?.length ?? 0}`);
+    } finally { setImporting(false); }
+  };
+
+  const runNormalize = async () => {
+    setNormalizing(true);
+    setResult(null);
+    try {
+      const data = await call('/api/schema/normalize', { hoja: 'REPORTE' });
+      setResult({ action: 'normalize', data });
+      if (data.success) toast.success(`${data.conductores_nuevos} conductores, ${data.equipos_nuevos} equipos normalizados`);
+      else toast.error(data.message ?? 'Errores durante la normalización');
+    } finally { setNormalizing(false); }
+  };
+
+  const runImportAll = async () => {
+    setImportingAll(true);
+    setResult(null);
+    try {
+      const data = await call('/api/schema/import-all');
+      setResult({ action: 'import-all', data });
+      if (data.success) toast.success(`Bootstrap: ${data.resumen.totalInsertados} nuevos, ${data.resumen.totalActualizados} actualizados`);
+      else toast.warning(`Con errores: ${data.resumen.totalErrores}`);
+    } finally { setImportingAll(false); }
+  };
+
+  const downloadSchema = () => {
+    const blob = new Blob([JSON.stringify(schema, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'schema.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const selectedDef = schema?.sheets[selectedSheet];
+
+  return (
+    <Card data-testid="schema-contract-card">
+      <CardHeader>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5 text-orange-400" />
+            Contrato de datos (schema.json)
+            {schema && <Badge className="bg-orange-500/15 text-orange-300 border border-orange-500/30 ml-2">v{schema.version}</Badge>}
+          </CardTitle>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={downloadSchema} disabled={!schema} data-testid="download-schema-btn">
+              <Download className="h-4 w-4 mr-2" />
+              Descargar JSON
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={runImportAll}
+              disabled={!sheetsConfigured || importingAll}
+              data-testid="import-all-btn"
+            >
+              {importingAll ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+              Importar todo
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={runNormalize}
+              disabled={!sheetsConfigured || normalizing}
+              data-testid="normalize-btn"
+            >
+              {normalizing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wand2 className="h-4 w-4 mr-2" />}
+              Normalizar REPORTE
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Este es el <b>contrato de datos</b> que cualquier sistema externo (backend, ERP, integración) puede leer
+          desde <code className="text-orange-300">GET /api/schema</code> para auto-configurarse. Define las hojas,
+          columnas, tipos, obligatoriedad, enums, foreign keys y reglas de normalización.
+        </p>
+
+        {schema && (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {Object.keys(schema.sheets).map((name) => (
+                <Button
+                  key={name}
+                  variant={selectedSheet === name ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => { setSelectedSheet(name); setResult(null); }}
+                  data-testid={`schema-tab-${name}`}
+                >
+                  <FileJson className="h-3 w-3 mr-1" />
+                  {name}
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    {schema.sheets[name].columns.length}
+                  </Badge>
+                </Button>
+              ))}
+            </div>
+
+            {selectedDef && (
+              <div className="rounded-md border border-border/50 bg-card/40 p-4">
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <div>
+                    <p className="text-sm font-semibold">
+                      {selectedSheet} <span className="text-muted-foreground">→ tabla <code>{selectedDef.db_table}</code></span>
+                    </p>
+                    {selectedDef.description && <p className="text-xs text-muted-foreground">{selectedDef.description}</p>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={runValidate} disabled={!sheetsConfigured || validating} data-testid="validate-btn">
+                      {validating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                      Validar
+                    </Button>
+                    <Button size="sm" onClick={runImport} disabled={!sheetsConfigured || importing} data-testid="import-selected-btn">
+                      {importing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                      Importar
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto max-h-64">
+                  <table className="w-full text-xs">
+                    <thead className="text-left text-muted-foreground border-b border-border/40">
+                      <tr>
+                        <th className="py-1 pr-3">Columna</th>
+                        <th className="py-1 pr-3">Tipo</th>
+                        <th className="py-1 pr-3">Obligatorio</th>
+                        <th className="py-1">Reglas</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-mono">
+                      {selectedDef.columns.map((c) => (
+                        <tr key={c.name} className="border-b border-border/20">
+                          <td className="py-1 pr-3">
+                            {c.name === selectedDef.primaryKey && <span className="text-orange-400 mr-1">🔑</span>}
+                            {c.name}
+                          </td>
+                          <td className="py-1 pr-3 text-emerald-400">{c.type}</td>
+                          <td className="py-1 pr-3">{c.required ? '✓' : '–'}</td>
+                          <td className="py-1 text-muted-foreground">
+                            {c.generated && <span className="text-purple-400 mr-2">auto-gen</span>}
+                            {c.foreignKey && <span className="text-cyan-400 mr-2">→ {c.foreignKey}</span>}
+                            {c.enum && <span>enum: {c.enum.join(', ')}</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {!sheetsConfigured && (
+          <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-300" data-testid="schema-warning">
+            ⚠ Configura Google Sheets arriba para habilitar los botones de Validar, Importar y Normalizar.
+          </div>
+        )}
+
+        {result && (
+          <div className="rounded-md border border-border/60 bg-background/60 p-3 text-xs font-mono overflow-x-auto max-h-64 overflow-y-auto" data-testid="schema-result">
+            <p className="text-emerald-300 font-semibold mb-2">{result.action}:</p>
+            <pre className="whitespace-pre-wrap text-muted-foreground">{JSON.stringify(result.data, null, 2)}</pre>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

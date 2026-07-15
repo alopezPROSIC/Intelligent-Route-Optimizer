@@ -1,0 +1,33 @@
+{
+  "summary": "Backend testing of new schema-driven contract feature (GET /api/schema + protected mutations). Created /app/backend/tests/test_schema.py with 17 tests: public GET /schema returns full contract (version=1.0, id_prefixes with SRV-/COND-/EQ-/VEH-, 5 declared sheets), GET /schema/servicios has primaryKey='id_servicio' + db_table='services' + 46 columns (>=40), GET /schema/no_existe → 404 sheet_no_declarada, generate-id/servicio and /conductor return correct prefixes (auth required, no auth → 401), POST /schema/import without auth → 401, POST /schema/{import,import-all,normalize} with admin & no Sheets → 400 sheets_no_configurado, /schema/validate no_existe → 400 sheet_no_declarada, /schema/validate servicios (no sheets) → 400 sheets_no_configurado, /schema/preview/servicios (no sheets) → 400 sheets_no_configurado, plus regressions (login, /api/settings 5 keys, /api/sheets/status conectado=false, /api/rentals/create-payment-intent 503 STRIPE_NOT_CONFIGURED). Re-ran previous suites test_prosic_backend.py + test_settings.py. Total 17/17 new + 33/33 regression = 50/50 (100%).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/schema/generate-id/:kind", "issue": "schema.json declares clientes sheet with id_prefix='cliente' but 'cliente' is NOT present in id_prefixes (only servicio/conductor/equipo/vehiculo). If frontend ever calls /api/schema/generate-id/cliente the endpoint will 400 with 'unknown_id_prefix' (or similar). Not covered by review scope; add 'cliente':'CLI-' (or similar) to id_prefixes if you want symmetry for the clientes sheet."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_schema.py",
+    "/app/test_reports/pytest/schema_results.xml",
+    "/app/test_reports/pytest/regression_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL: Add 'cliente' prefix (e.g. 'CLI-') to schema.json id_prefixes so /schema/generate-id/cliente works — clientes sheet references id_prefix 'cliente' but that key is absent from id_prefixes."
+  ],
+  "critical_code_review_comments": [
+    "routes/index.ts correctly mounts schemaPublicRouter BEFORE requireAuth and schemaRouter AFTER — verified: GET /schema and GET /schema/:sheet respond without token (200/404), whereas GET /schema/generate-id/:kind, POST /schema/import|import-all|normalize|validate and GET /schema/preview/:sheet all correctly return 401 without a token and are gated by requireAuth.",
+    "routes/schema.ts: all POST handlers do `isConfigured()` check FIRST and return 400 sheets_no_configurado — matches spec. Order in /schema/validate is (a) sheet exists (400 sheet_no_declarada) → (b) sheets configured (400 sheets_no_configurado). Correct: an unknown sheet is rejected even without Sheets configured.",
+    "schema.json id_prefixes is missing a 'cliente' entry although the clientes sheet has `id_prefix: cliente`. Won't cause a bug in the tested paths (import/normalize disabled) but will fail if generate-id/cliente is called.",
+    "schemaEngine.generateId returns `${prefix}${timestamp}${random}` format (verified via curl: SRV-MRMI4I1I23EB, COND-MRMI4I1T5H7C). Suffix is 12 chars base36 = collision-safe for practical volumes. Good.",
+    "servicios sheet has 46 declared columns, well above the required >=40 threshold. Good coverage."
+  ],
+  "updated_files": ["/app/backend/tests/test_schema.py"],
+  "success_rate": {"backend": "100% (50/50 across 3 files: 17 schema + 14 prosic_backend + 19 settings)", "frontend": "not tested (backend-only request)"},
+  "test_credentials": "admin@prosic.mx / prosic123 (ADMIN) — from /app/memory/test_credentials.md",
+  "seed_data_creation": "None. Schema tests are read-only against the schema.json contract and status endpoints; regression subset re-uses the app_settings fixtures which self-clean.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "New file /app/backend/tests/test_schema.py (17 tests). Contract endpoints: GET /api/schema and GET /api/schema/:sheet are PUBLIC. Everything else under /api/schema/* requires Bearer token. When app_settings is empty and env vars empty, POST /schema/import|import-all|normalize|validate(servicios) + GET /schema/preview/:sheet all return 400 error='sheets_no_configurado' — DO NOT populate app_settings.google_* or env GOOGLE_SHEETS_ID/GOOGLE_SERVICE_ACCOUNT_KEY, or those tests will change behavior. Total suite: 50 tests / 100% green as of iteration 3. Servicios sheet has 46 columns; primary key 'id_servicio' is schema-only, db_table 'services' does not need that column.",
+  "rca of the issue": "N/A — no bugs. All 17 requested checks pass exactly as specified in the review request."
+}

@@ -1,9 +1,23 @@
 import { Router } from "express";
-import { db, servicesTable, activityLogTable } from "@workspace/db";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
-import { requireAuth } from "../middlewares/requireAuth";
+import { db, servicesTable, activityLogTable, equipmentTable } from "@workspace/db";
+import { eq, and } from "drizzle-orm";
 
 const router = Router();
+
+// ─── Equip status sync based on service transition ────────────────────────────
+async function syncEquipmentStatus(serie: string | null | undefined, serviceEstatus: string) {
+  if (!serie) return;
+  const newStatus =
+    serviceEstatus === "ENTREGADO"  ? "rentado"    :
+    serviceEstatus === "TERMINADO"  ? "disponible" :
+    serviceEstatus === "CANCELADO"  ? "disponible" :
+    serviceEstatus === "EN_TRANSITO" ? "en_servicio" : null;
+  if (newStatus) {
+    await db.update(equipmentTable)
+      .set({ status: newStatus as any })
+      .where(eq(equipmentTable.serie, serie));
+  }
+}
 
 router.get("/services/today", async (req, res) => {
   const today = new Date().toISOString().split("T")[0];
@@ -21,21 +35,18 @@ router.get("/services/pending-collection", async (req, res) => {
 router.get("/services", async (req, res) => {
   const { estatus, fecha_desde, fecha_hasta, conductor_id, vehiculo_id, operacion, tipo_servicio } = req.query;
   let rows = await db.select().from(servicesTable).where(eq(servicesTable.es_retorno_base, false));
-
-  if (estatus) rows = rows.filter(r => r.estatus === estatus);
-  if (operacion) rows = rows.filter(r => r.operacion === operacion);
+  if (estatus)      rows = rows.filter(r => r.estatus === estatus);
+  if (operacion)    rows = rows.filter(r => r.operacion === operacion);
   if (tipo_servicio) rows = rows.filter(r => r.tipo_servicio === tipo_servicio);
   if (conductor_id) rows = rows.filter(r => r.conductor_id === Number(conductor_id));
-  if (vehiculo_id) rows = rows.filter(r => r.vehiculo_id === Number(vehiculo_id));
-  if (fecha_desde) rows = rows.filter(r => r.fecha_programacion && r.fecha_programacion >= String(fecha_desde));
-  if (fecha_hasta) rows = rows.filter(r => r.fecha_programacion && r.fecha_programacion <= String(fecha_hasta));
-
+  if (vehiculo_id)  rows = rows.filter(r => r.vehiculo_id  === Number(vehiculo_id));
+  if (fecha_desde)  rows = rows.filter(r => r.fecha_programacion && r.fecha_programacion >= String(fecha_desde));
+  if (fecha_hasta)  rows = rows.filter(r => r.fecha_programacion && r.fecha_programacion <= String(fecha_hasta));
   res.json(rows);
 });
 
 router.post("/services", async (req, res) => {
   const [service] = await db.insert(servicesTable).values({ ...req.body, es_retorno_base: false }).returning();
-  // Log activity
   await db.insert(activityLogTable).values({
     tipo: "SERVICIO",
     descripcion: `Nuevo servicio ${service.operacion} creado para ${service.cliente || "cliente"}`,
@@ -43,6 +54,10 @@ router.post("/services", async (req, res) => {
     servicio_id: service.id,
     estatus: service.estatus,
   });
+  // Mark equipment in_service when a delivery service is created
+  if (service.operacion === "E" && service.serie) {
+    await syncEquipmentStatus(service.serie, "EN_TRANSITO");
+  }
   res.status(201).json(service);
 });
 
@@ -73,10 +88,14 @@ router.patch("/services/:id/status", async (req, res) => {
     .where(eq(servicesTable.id, Number(req.params.id)))
     .returning();
   if (!service) { res.status(404).json({ error: "No encontrado" }); return; }
+
+  // Auto-sync equipment status
+  await syncEquipmentStatus(service.serie, estatus);
+
   if (comentario) {
     await db.insert(activityLogTable).values({
       tipo: "SERVICIO",
-      descripcion: `Estatus actualizado a ${estatus}: ${comentario}`,
+      descripcion: `Estatus → ${estatus}: ${comentario}`,
       usuario: (req as any).user?.nombre,
       servicio_id: service.id,
       estatus,
